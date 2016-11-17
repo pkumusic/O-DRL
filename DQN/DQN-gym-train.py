@@ -37,10 +37,6 @@ from tensorpack.callbacks.base import PeriodicCallback
 import common
 from common import play_model, Evaluator, eval_model_multithread
 
-
-STEP_PER_EPOCH = 6000
-
-
 BATCH_SIZE = 64
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
@@ -58,7 +54,7 @@ MEMORY_SIZE = 1e6
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e4
-STEP_PER_EPOCH = 20
+STEP_PER_EPOCH = 1000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
