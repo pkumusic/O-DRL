@@ -128,10 +128,10 @@ class Model(ModelDesc):
             targetQ_predict_value = self._get_DQN_prediction(next_state)    # NxA
 
         if not DOUBLE:
-            # DQN
+            # DQN  # Select the greedy and value from the same target net.
             best_v = tf.reduce_max(targetQ_predict_value, 1)    # N,
         else:
-            # Double-DQN
+            # Double-DQN # select the greedy from online net, get value from the target net.
             tf.get_variable_scope().reuse_variables()
             next_predict_value = self._get_DQN_prediction(next_state)
             self.greedy_choice = tf.argmax(next_predict_value, 1)   # N,
