@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 # Authors: Music, Tian, Jing
 
+from tensorpack.tfutils import symbolic_functions as symbf
+
 import argparse
-import os
 from tensorpack.predict.common import PredictConfig
 from tensorpack import *
 from tensorpack.models.model_desc import ModelDesc, InputVar
@@ -14,10 +15,9 @@ from tensorpack.callbacks.stat import StatPrinter
 from tensorpack.callbacks.common import ModelSaver
 from tensorpack.callbacks.param import ScheduledHyperParamSetter, HumanHyperParamSetter
 from tensorpack.tfutils.summary import add_moving_summary, add_param_summary
-from tensorpack.tfutils.symbolic_functions import huber_loss
 from tensorpack.RL.expreplay import ExpReplay
 from tensorpack.tfutils.sessinit import SaverRestore
-from tensorpack.train.trainer import QueueInputTrainer
+from tensorpack.train.queue import QueueInputTrainer
 from tensorpack.RL.common import MapPlayerState
 from tensorpack.RL.gymenv import GymEnv
 from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
@@ -25,12 +25,12 @@ from tensorpack.RL.history import HistoryFramePlayer
 from tensorpack.tfutils.argscope import argscope
 from tensorpack.models.conv2d import Conv2D
 from tensorpack.models.pool import MaxPooling
+from tensorpack.models.nonlin import LeakyReLU, PReLU
 from tensorpack.models.fc import FullyConnected
-from tensorpack.models.nonlin import LeakyReLU
-
-
-import common
-from common import play_model, Evaluator, eval_model_multithread
+import tensorpack.tfutils.summary as summary
+from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
+from tensorpack.callbacks.graph import RunOp
+from tensorpack.callbacks.base import PeriodicCallback
 
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
@@ -39,8 +39,9 @@ IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
 
 NUM_ACTIONS = None
 ENV_NAME = None
+METHOD = None
 
-from common import play_one_episode
+from common import play_one_episode, get_predict_func
 
 def get_player(dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir, auto_restart=False)
@@ -59,9 +60,10 @@ class Model(ModelDesc):
                 InputVar(tf.int32, (None,), 'action'),
                 InputVar(tf.float32, (None,), 'futurereward') ]
 
-    def _get_NN_prediction(self, image):
+    def _get_DQN_prediction(self, image):
+        """ image: [0,255]"""
         image = image / 255.0
-        with argscope(Conv2D, nl=tf.nn.relu):
+        with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
             l = Conv2D('conv1', l, out_channel=32, kernel_shape=5)
@@ -70,17 +72,26 @@ class Model(ModelDesc):
             l = MaxPooling('pool2', l, 2)
             l = Conv2D('conv3', l, out_channel=64, kernel_shape=3)
 
-        l = FullyConnected('fc0', l, 512, nl=tf.identity)
-        l = PReLU('prelu', l)
-        policy = FullyConnected('fc-pi', l, out_dim=NUM_ACTIONS, nl=tf.identity)
-        return policy
+            l = FullyConnected('fc0', l, 512, nl=lambda x, name: LeakyReLU.f(x, 0.01, name))
+            # the original arch
+            #.Conv2D('conv0', image, out_channel=32, kernel_shape=8, stride=4)
+            #.Conv2D('conv1', out_channel=64, kernel_shape=4, stride=2)
+            #.Conv2D('conv2', out_channel=64, kernel_shape=3)
+
+        if METHOD != 'Dueling':
+            Q = FullyConnected('fct', l, NUM_ACTIONS, nl=tf.identity)
+        else:
+            V = FullyConnected('fctV', l, 1, nl=tf.identity)
+            As = FullyConnected('fctA', l, NUM_ACTIONS, nl=tf.identity)
+            Q = tf.add(As, V - tf.reduce_mean(As, 1, keep_dims=True))
+        return tf.identity(Q, name='Qvalue')
 
     def _build_graph(self, inputs):
         state, action, futurereward = inputs
-        policy = self._get_NN_prediction(state)
-        self.logits = tf.nn.softmax(policy, name='logits')
+        self.Qvalue = self._get_DQN_prediction(state)
 
-def run_submission(cfg, output, nr):
+
+def run_submission(cfg, output, nr, api_key):
     player = get_player(dumpdir=output)
     predfunc = get_predict_func(cfg)
     for k in range(nr):
@@ -88,9 +99,10 @@ def run_submission(cfg, output, nr):
             player.restart_episode()
         score = play_one_episode(player, predfunc)
         print("Total:", score)
+    do_submit(output, api_key)
 
-def do_submit(output):
-    gym.upload(output, api_key='xxx')
+def do_submit(output, api_key):
+    gym.upload(output, api_key=api_key)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -100,9 +112,13 @@ if __name__ == '__main__':
     parser.add_argument('--episode', help='number of episodes to run',
             type=int, default=100)
     parser.add_argument('--output', help='output directory', default='gym-submit')
+    parser.add_argument('-a', '--algo', help='algorithm to use'
+                        , choices=['DQN', 'DDQN', 'Dueling'], default='DDQN')
+    parser.add_argument('--api', help='gym api key')
     args = parser.parse_args()
 
     ENV_NAME = args.env
+    METHOD = args.algo
     assert ENV_NAME
     logger.info("Environment Name: {}".format(ENV_NAME))
     p = get_player(); del p    # set NUM_ACTIONS
@@ -114,5 +130,5 @@ if __name__ == '__main__':
             model=Model(),
             session_init=SaverRestore(args.load),
             input_var_names=['state'],
-            output_var_names=['logits'])
-    run_submission(cfg, args.output, args.episode)
+            output_var_names=['Qvalue'])
+    run_submission(cfg, args.output, args.episode, args.api)
