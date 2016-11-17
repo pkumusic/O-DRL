@@ -227,12 +227,24 @@ if __name__ == "__main__":
     parser.add_argument('-e','--env', help='env', required=True)
     parser.add_argument('-t','--task', help='task to perform',
                         choices=['play','eval','train'], default='train')
-    parser.add_argument('--double', help='If use double DQN', default=True)
-    parser.add_argument('--dueling', help='If use dueling method', default=False)
+    parser.add_argument('--double', help='If use double DQN', default='t')
+    parser.add_argument('--dueling', help='If use dueling method', default='f')
     args=parser.parse_args()
     ENV_NAME = args.env
-    DOUBLE = args.double
-    DUELING = args.dueling
+
+    if args.double == 't':
+        DOUBLE = True
+    elif args.double == 'f':
+        DOUBLE = False
+    else:
+        logger.error("double argument must be t or f")
+    if args.dueling == 't':
+        DUELING = True
+    elif args.dueling == 'f':
+        DUELING = False
+    else:
+        logger.error("dueling argument must be t or f")
+
     if DOUBLE:
         logger.info("Using Double")
     if DUELING:
