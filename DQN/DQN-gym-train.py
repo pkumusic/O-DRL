@@ -238,12 +238,14 @@ if __name__ == "__main__":
         DOUBLE = False
     else:
         logger.error("double argument must be t or f")
+        exit()
     if args.dueling == 't':
         DUELING = True
     elif args.dueling == 'f':
         DUELING = False
     else:
         logger.error("dueling argument must be t or f")
+        exit()
 
     if DOUBLE:
         logger.info("Using Double")
