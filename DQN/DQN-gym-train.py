@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # DL Project for 10807
+# Author: Music, Tian, Jing
 
 from tensorpack.tfutils import symbolic_functions as symbf
 
@@ -58,7 +59,8 @@ STEP_PER_EPOCH = 1000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
-METHOD = None
+DOUBLE = None
+DUELING = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
@@ -104,7 +106,7 @@ class Model(ModelDesc):
             #.Conv2D('conv1', out_channel=64, kernel_shape=4, stride=2)
             #.Conv2D('conv2', out_channel=64, kernel_shape=3)
 
-        if METHOD != 'Dueling':
+        if not DUELING:
             Q = FullyConnected('fct', l, NUM_ACTIONS, nl=tf.identity)
         else:
             V = FullyConnected('fctV', l, 1, nl=tf.identity)
@@ -125,7 +127,7 @@ class Model(ModelDesc):
         with tf.variable_scope('target'):
             targetQ_predict_value = self._get_DQN_prediction(next_state)    # NxA
 
-        if METHOD != 'Double':
+        if not DOUBLE:
             # DQN
             best_v = tf.reduce_max(targetQ_predict_value, 1)    # N,
         else:
@@ -225,10 +227,17 @@ if __name__ == "__main__":
     parser.add_argument('-e','--env', help='env', required=True)
     parser.add_argument('-t','--task', help='task to perform',
                         choices=['play','eval','train'], default='train')
-    parser.add_argument('-a','--algo', help='algorithm to use'
-                        , choices=['DQN', 'DDQN', 'Dueling'], default='DDQN')
+    parser.add_argument('--double', help='If use double DQN', default=True)
+    parser.add_argument('--dueling', help='If use dueling method', default=False)
     args=parser.parse_args()
     ENV_NAME = args.env
+    DOUBLE = args.double
+    DUELING = args.dueling
+    if DOUBLE:
+        logger.info("Using Double")
+    if DUELING:
+        logger.info("Using Dueling")
+
     assert ENV_NAME
     p = get_player(); del p     # set NUM_ACTIONS
 
@@ -236,7 +245,6 @@ if __name__ == "__main__":
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if args.task != 'train':
         assert args.load is not None
-    METHOD = args.algo
 
     if args.task != 'train':
         cfg = PredictConfig(

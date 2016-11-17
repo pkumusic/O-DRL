@@ -40,7 +40,8 @@ IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
 
 NUM_ACTIONS = None
 ENV_NAME = None
-METHOD = None
+DOUBLE = None
+DUELING = None
 
 from common import play_one_episode, get_predict_func
 
@@ -79,7 +80,7 @@ class Model(ModelDesc):
             #.Conv2D('conv1', out_channel=64, kernel_shape=4, stride=2)
             #.Conv2D('conv2', out_channel=64, kernel_shape=3)
 
-        if METHOD != 'Dueling':
+        if not DUELING:
             Q = FullyConnected('fct', l, NUM_ACTIONS, nl=tf.identity)
         else:
             V = FullyConnected('fctV', l, 1, nl=tf.identity)
@@ -112,13 +113,14 @@ if __name__ == '__main__':
     parser.add_argument('--episode', help='number of episodes to run',
             type=int, default=100)
     parser.add_argument('--output', help='output directory', default='gym-submit')
-    parser.add_argument('-a', '--algo', help='algorithm to use'
-                        , choices=['DQN', 'DDQN', 'Dueling'], default='DDQN')
+    parser.add_argument('--double', help='If use double DQN', default=True)
+    parser.add_argument('--dueling', help='If use dueling method', default=False)
     parser.add_argument('--api', help='gym api key')
     args = parser.parse_args()
 
     ENV_NAME = args.env
-    METHOD = args.algo
+    DOUBLE = args.double
+    DUELING = args.dueling
     assert ENV_NAME
     logger.info("Environment Name: {}".format(ENV_NAME))
     p = get_player(); del p    # set NUM_ACTIONS
