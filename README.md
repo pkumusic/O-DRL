@@ -22,15 +22,9 @@ Object Sensitive Deep Reinforcement Learning
 # Git Configuration
 Initialization
 ~~~
-git clone https://github.com/pkumusic/tensorpack.git
-git remote add upstream https://github.com/ppwwyyxx/tensorpack.git
+https://github.com/pkumusic/O-DRL.git
 ~~~
-If you need to synchronize the tensorpack with the newest one.
-~~~
-git fetch upstream
-git checkout master
-git merge upgstream/master
-~~~
+
 
 # Deploy on Mac
 + I did it without virtual environment. If using machines without root privilege, it maybe more convenient to use virtualenv 

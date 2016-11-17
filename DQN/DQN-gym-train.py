@@ -17,7 +17,7 @@ from tensorpack.callbacks.param import ScheduledHyperParamSetter, HumanHyperPara
 from tensorpack.tfutils.summary import add_moving_summary, add_param_summary
 from tensorpack.RL.expreplay import ExpReplay
 from tensorpack.tfutils.sessinit import SaverRestore
-from tensorpack.train.trainer import QueueInputTrainer
+from tensorpack.train.queue import QueueInputTrainer
 from tensorpack.RL.common import MapPlayerState
 from tensorpack.RL.gymenv import GymEnv
 from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
