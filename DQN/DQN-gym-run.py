@@ -113,14 +113,30 @@ if __name__ == '__main__':
     parser.add_argument('--episode', help='number of episodes to run',
             type=int, default=100)
     parser.add_argument('--output', help='output directory', default='gym-submit')
-    parser.add_argument('--double', help='If use double DQN', default=True)
-    parser.add_argument('--dueling', help='If use dueling method', default=False)
+    parser.add_argument('--double', help='If use double DQN', default='t')
+    parser.add_argument('--dueling', help='If use dueling method', default='f')
     parser.add_argument('--api', help='gym api key')
     args = parser.parse_args()
 
     ENV_NAME = args.env
-    DOUBLE = args.double
-    DUELING = args.dueling
+    if args.double == 't':
+        DOUBLE = True
+    elif args.double == 'f':
+        DOUBLE = False
+    else:
+        logger.error("double argument must be t or f")
+    if args.dueling == 't':
+        DUELING = True
+    elif args.dueling == 'f':
+        DUELING = False
+    else:
+        logger.error("dueling argument must be t or f")
+
+    if DOUBLE:
+        logger.info("Using Double")
+    if DUELING:
+        logger.info("Using Dueling")
+
     assert ENV_NAME
     logger.info("Environment Name: {}".format(ENV_NAME))
     p = get_player(); del p    # set NUM_ACTIONS
