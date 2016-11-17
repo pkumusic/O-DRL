@@ -24,7 +24,14 @@ from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
 from tensorpack.RL.history import HistoryFramePlayer
 from tensorpack.tfutils.argscope import argscope
 from tensorpack.models.conv2d import Conv2D
-from tensorpack.models.nonlin import LeakyReLU
+from tensorpack.models.pool import MaxPooling
+from tensorpack.models.nonlin import LeakyReLU, PReLU
+from tensorpack.models.fc import FullyConnected
+import tensorpack.tfutils.summary as summary
+from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
+from tensorpack.callbacks.graph import RunOp
+from tensorpack.callbacks.base import PeriodicCallback
+
 
 
 import common
@@ -38,9 +45,6 @@ BATCH_SIZE = 64
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
 ACTION_REPEAT = 4
-# HEIGHT_RANGE = (None, None)
-HEIGHT_RANGE = (36, 204)    # for breakout
-#HEIGHT_RANGE = (28, -8)   # for pong
 
 CHANNEL = FRAME_HISTORY * 3
 IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
@@ -51,13 +55,14 @@ EXPLORATION_EPOCH_ANNEAL = 0.01
 END_EXPLORATION = 0.1
 
 MEMORY_SIZE = 1e6
+# NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
+# Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e4
-STEP_PER_EPOCH = 500
+STEP_PER_EPOCH = 20
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
-ROM_FILE = None
-
+METHOD = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
@@ -89,22 +94,28 @@ class Model(ModelDesc):
         """ image: [0,255]"""
         image = image / 255.0
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
-            return (LinearWrap(image)
-                .Conv2D('conv0', out_channel=32, kernel_shape=5)
-                .MaxPooling('pool0', 2)
-                .Conv2D('conv1', out_channel=32, kernel_shape=5)
-                .MaxPooling('pool1', 2)
-                .Conv2D('conv2', out_channel=64, kernel_shape=4)
-                .MaxPooling('pool2', 2)
-                .Conv2D('conv3', out_channel=64, kernel_shape=3)
+            l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
+            l = MaxPooling('pool0', l, 2)
+            l = Conv2D('conv1', l, out_channel=32, kernel_shape=5)
+            l = MaxPooling('pool1', l, 2)
+            l = Conv2D('conv2', l, out_channel=64, kernel_shape=4)
+            l = MaxPooling('pool2', l, 2)
+            l = Conv2D('conv3', l, out_channel=64, kernel_shape=3)
 
-                # the original arch
-                #.Conv2D('conv0', image, out_channel=32, kernel_shape=8, stride=4)
-                #.Conv2D('conv1', out_channel=64, kernel_shape=4, stride=2)
-                #.Conv2D('conv2', out_channel=64, kernel_shape=3)
+            l = FullyConnected('fc0', l, 512, nl=lambda x, name: LeakyReLU.f(x, 0.01, name))
+            # the original arch
+            #.Conv2D('conv0', image, out_channel=32, kernel_shape=8, stride=4)
+            #.Conv2D('conv1', out_channel=64, kernel_shape=4, stride=2)
+            #.Conv2D('conv2', out_channel=64, kernel_shape=3)
 
-                .FullyConnected('fc0', 512, nl=lambda x, name: LeakyReLU.f(x, 0.01, name))
-                .FullyConnected('fct', NUM_ACTIONS, nl=tf.identity)())
+        if METHOD != 'Dueling':
+            Q = FullyConnected('fct', l, NUM_ACTIONS, nl=tf.identity)
+        else:
+            V = FullyConnected('fctV', l, 1, nl=tf.identity)
+            As = FullyConnected('fctA', l, NUM_ACTIONS, nl=tf.identity)
+            Q = tf.add(As, V - tf.reduce_mean(As, 1, keep_dims=True))
+        return tf.identity(Q, name='Qvalue')
+
 
     def _build_graph(self, inputs):
         state, action, reward, next_state, isOver = inputs
@@ -118,22 +129,24 @@ class Model(ModelDesc):
         with tf.variable_scope('target'):
             targetQ_predict_value = self._get_DQN_prediction(next_state)    # NxA
 
-        # DQN
-        #best_v = tf.reduce_max(targetQ_predict_value, 1)    # N,
-
-        # Double-DQN
-        tf.get_variable_scope().reuse_variables()
-        next_predict_value = self._get_DQN_prediction(next_state)
-        self.greedy_choice = tf.argmax(next_predict_value, 1)   # N,
-        predict_onehot = tf.one_hot(self.greedy_choice, NUM_ACTIONS, 1.0, 0.0)
-        best_v = tf.reduce_sum(targetQ_predict_value * predict_onehot, 1)
+        if METHOD != 'Double':
+            # DQN
+            best_v = tf.reduce_max(targetQ_predict_value, 1)    # N,
+        else:
+            # Double-DQN
+            tf.get_variable_scope().reuse_variables()
+            next_predict_value = self._get_DQN_prediction(next_state)
+            self.greedy_choice = tf.argmax(next_predict_value, 1)   # N,
+            predict_onehot = tf.one_hot(self.greedy_choice, NUM_ACTIONS, 1.0, 0.0)
+            best_v = tf.reduce_sum(targetQ_predict_value * predict_onehot, 1)
 
         target = reward + (1.0 - tf.cast(isOver, tf.float32)) * GAMMA * tf.stop_gradient(best_v)
 
-        cost = symbf.huber_loss(target - pred_action_value)
+        self.cost = tf.truediv(symbf.huber_loss(target - pred_action_value),
+                               tf.cast(BATCH_SIZE, tf.float32), name='cost')
+
         summary.add_param_summary([('conv.*/W', ['histogram', 'rms']),
                                    ('fc.*/W', ['histogram', 'rms']) ])   # monitor all W
-        self.cost = tf.reduce_mean(cost, name='cost')
 
     def update_target_param(self):
         vars = tf.trainable_variables()
@@ -175,7 +188,7 @@ def get_config():
     M = Model()
 
     dataset_train = ExpReplay(
-            predictor_io_names=(['state'], ['fct/output']),
+            predictor_io_names=(['state'], ['Qvalue']),
             player=get_player(train=True),
             batch_size=BATCH_SIZE,
             memory_size=MEMORY_SIZE,
@@ -199,7 +212,7 @@ def get_config():
                 [(150, 4e-4), (250, 1e-4), (350, 5e-5)]),
             RunOp(lambda: M.update_target_param()),
             dataset_train,
-            PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['fct/output']), 3),
+            PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 3),
             #HumanHyperParamSetter('learning_rate', 'hyper.txt'),
             #HumanHyperParamSetter(ObjAttrParam(dataset_train, 'exploration'), 'hyper.txt'),
         ]),
@@ -216,6 +229,8 @@ if __name__ == "__main__":
     parser.add_argument('-e','--env', help='env', required=True)
     parser.add_argument('-t','--task', help='task to perform',
                         choices=['play','eval','train'], default='train')
+    parser.add_argument('-a','--algo', help='algorithm to use'
+                        , choices=['DQN', 'DDQN', 'Dueling'], default='DDQN')
     args=parser.parse_args()
     ENV_NAME = args.env
     assert ENV_NAME
@@ -225,13 +240,14 @@ if __name__ == "__main__":
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     if args.task != 'train':
         assert args.load is not None
+    METHOD = args.algo
 
     if args.task != 'train':
         cfg = PredictConfig(
                 model=Model(),
                 session_init=SaverRestore(args.load),
                 input_var_names=['state'],
-                output_var_names=['fct/output:0'])
+                output_var_names=['Qvalue'])
         if args.task == 'play':
             play_model(cfg)
         elif args.task == 'eval':

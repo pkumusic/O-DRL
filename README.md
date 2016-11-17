@@ -24,7 +24,18 @@ Initialization
 ~~~
 https://github.com/pkumusic/O-DRL.git
 ~~~
-
+Download or update tensor pack by:
+~~~
+sh update_tensorpack.sh
+~~~
+Or
+~~~
+svn export https://github.com/ppwwyyxx/tensorpack/trunk/tensorpack --force
+~~~
+export path 
+~~~
+export PYTHONPATH=$PYTHONPATH:path/to/O-DRL
+~~~
 
 # Deploy on Mac
 + I did it without virtual environment. If using machines without root privilege, it maybe more convenient to use virtualenv 
