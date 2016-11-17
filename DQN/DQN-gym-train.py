@@ -182,7 +182,8 @@ class Model(ModelDesc):
 #     )
 
 def get_config():
-    logger.auto_set_dir()
+    #logger.auto_set_dir()
+    logger.set_logger_dir(os.path.join('train_log', LOG_DIR))
     M = Model()
 
     dataset_train = ExpReplay(
@@ -229,8 +230,10 @@ if __name__ == "__main__":
                         choices=['play','eval','train'], default='train')
     parser.add_argument('--double', help='If use double DQN', default='t')
     parser.add_argument('--dueling', help='If use dueling method', default='f')
+    parser.add_argument('--logdir', help='output directory', required=True)
     args=parser.parse_args()
     ENV_NAME = args.env
+    LOG_DIR  = args.logdir
 
     if args.double == 't':
         DOUBLE = True
