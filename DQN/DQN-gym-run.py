@@ -31,6 +31,7 @@ import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
+import gym
 
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
@@ -91,7 +92,7 @@ class Model(ModelDesc):
         self.Qvalue = self._get_DQN_prediction(state)
 
 
-def run_submission(cfg, output, nr, api_key):
+def run_submission(cfg, output, nr):
     player = get_player(dumpdir=output)
     predfunc = get_predict_func(cfg)
     for k in range(nr):
@@ -99,7 +100,6 @@ def run_submission(cfg, output, nr, api_key):
             player.restart_episode()
         score = play_one_episode(player, predfunc)
         print("Total:", score)
-    do_submit(output, api_key)
 
 def do_submit(output, api_key):
     gym.upload(output, api_key=api_key)
@@ -131,4 +131,5 @@ if __name__ == '__main__':
             session_init=SaverRestore(args.load),
             input_var_names=['state'],
             output_var_names=['Qvalue'])
-    run_submission(cfg, args.output, args.episode, args.api)
+    run_submission(cfg, args.output, args.episode)
+    do_submit(args.output, args.api)
