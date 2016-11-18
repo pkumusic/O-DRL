@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # DL Project for 10807
-# Author: Music, Tian, Jing
+# Author: Music, Tian, Jing, Yuxin
 
 from tensorpack.tfutils import symbolic_functions as symbf
 
