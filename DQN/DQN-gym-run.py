@@ -100,7 +100,7 @@ def run_submission(cfg, output, nr):
     for k in range(nr):
         if k != 0:
             player.restart_episode()
-        score = play_one_episode(player, predfunc)
+        score = play_one_episode(player, predfunc)#, task='save_image')
         print("Total:", score)
 
 def do_submit(output, api_key):
@@ -117,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--double', help='If use double DQN', default='t')
     parser.add_argument('--dueling', help='If use dueling method', default='f')
     parser.add_argument('--api', help='gym api key')
+    #parser.add_argument('--task', help='task to perform', choices=['gym','sample'], default='gym')
     args = parser.parse_args()
 
     ENV_NAME = args.env

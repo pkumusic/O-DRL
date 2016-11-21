@@ -4,34 +4,30 @@
 # Author: Music, Tian, Jing
 # This file is used to sample images for pre-training object recognition
 # Building template and its weights.
-
-from tensorpack.RL.expreplay import ExpReplay
+import pylab
+import argparse
+import os
+import matplotlib.pyplot as plt
 from tensorpack.RL.gymenv import GymEnv
-from tensorpack.RL.common import MapPlayerState, PreventStuckPlayer, LimitLengthPlayer
-from tensorpack.RL.history import HistoryFramePlayer
+from tensorpack.RL.common import MapPlayerState, LimitLengthPlayer
 import cv2
 import numpy as np
 from tensorpack.utils.utils import get_rng
-ENV_NAME = 'MsPacman-v0'
+ENV_NAME = None
+OUT_DIR = None
+NUM_ACTIONS = None
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
-    #TODO: Preprocessing goes here
     def func(img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        #img = img[:,:,0]
         #img = cv2.resize(img, IMAGE_SIZE[::])
         return img
     pl = MapPlayerState(pl, func)
-
     global NUM_ACTIONS
     NUM_ACTIONS = pl.get_action_space().num_actions()
-    if not train:
-        pass
-        #pl = HistoryFramePlayer(pl, FRAME_HISTORY)
-        #pl = PreventStuckPlayer(pl, 30, 1)
     pl = LimitLengthPlayer(pl, 40000)
     return pl
 
@@ -58,30 +54,47 @@ def detect(image, obj, method='absolute', max_diff=0.25):
                 answers.append((i, j))
     return answers
 
-if __name__ == '__main__':
-    player = get_player()
+def random_sample_images(num_imgs=2000, out_dir=None):
+    print out_dir
     rng = get_rng()
-
-    task = 'detect'
-
-    import matplotlib.pyplot as plt
-    if task == 'save':
-        for i in xrange(50):
-            #random_action = rng.choice(range(NUM_ACTIONS))
-            player.action(1)
-            # Original image: (210 * 160 * 3) by print player.current_state().shape
-            # print player.current_state().shape
-            #if i == 25:
-            #    player.restart_episode()
-            file_name = 'freeway/' + ENV_NAME + '_' + str(i)
-            X =  player.current_state()
+    for i in xrange(num_imgs):
+        # Num Actions for Pacman: 9
+        player.action(rng.choice(range(NUM_ACTIONS)))
+        file_name = os.path.join(out_dir, str(i))
+        if i%100 in set(xrange(20)):
+            X = player.current_state()
+            plt.imshow(X, cmap=pylab.gray())
+            #plt.show()
             np.save(file_name, X)
-            imgplot = plt.imshow(X)
             plt.savefig(file_name)
+
+def print_images(ids):
+    for id in ids:
+        X = np.load(OUT_DIR + '/' + str(id) + '.npy')
+        print X
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--task', help='task to perform',
+                        choices=['save_images', 'find_templates', 'detect'], default='test')
+    parser.add_argument('--dir', help='directory', default='../obj')
+    parser.add_argument('--env', help='Environment', default='MsPacman-v0')
+    args = parser.parse_args()
+    ENV_NAME = args.env
+    OUT_DIR = os.path.join(args.dir,args.env)
+    assert ENV_NAME
+    player = get_player()
+
+    if args.task == 'save_images':
+        random_sample_images(out_dir=OUT_DIR)
+    if args.task == 'test':
+        #
+        print_images([0,1])
+
 
     # Experiment on picture 20
     # MANUALLY EXTRACT OBJECTS TEMPLATES
-    if task == 'template':
+    if args.task == 'template':
         sample = '20'
         file_name = 'freeway/' + ENV_NAME + '_' + str(sample)
         image = np.load(file_name + '.npy')
@@ -129,7 +142,7 @@ if __name__ == '__main__':
         #plt.imshow(X)
         # print o1
         #plt.show()
-    if task == 'detect':
+    if args.task == 'detect':
         sample = '24'
         file_name = 'freeway/' + ENV_NAME + '_' + str(sample)
         image = np.load(file_name + '.npy')

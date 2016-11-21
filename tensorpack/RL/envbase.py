@@ -70,16 +70,15 @@ class RLEnvironment(object):
                 STEP += 1
                 file_name = '../obj/MsPacman-v0-sample/' + str(STEP)
                 img  = self.original_current_state()
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                plt.imshow(img, cmap=pylab.gray())
+                #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                plt.imshow(img)#, cmap=pylab.gray())
                 plt.savefig(file_name)
-                np.save(file_name, img)
 
             act = func(s)
             r, isOver = self.action(act)
             #print r
             if isOver:
-                if task == 'save_images':
+                if task == 'save_image':
                     exit()
                 s = [self.stats[k] for k in stat]
                 self.reset_stat()

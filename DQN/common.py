@@ -17,7 +17,7 @@ from tensorpack.callbacks import *
 global get_player
 get_player = None
 
-def play_one_episode(player, func, verbose=False):
+def play_one_episode(player, func, verbose=False, task=None):
     def f(s):
         spc = player.get_action_space()
         act = func([[s]])[0][0].argmax()
@@ -26,7 +26,7 @@ def play_one_episode(player, func, verbose=False):
         if verbose:
             print(act)
         return act
-    return np.mean(player.play_one_episode(f))
+    return np.mean(player.play_one_episode(f, task=task))
 
 def play_model(cfg):
     player = get_player(viz=0.01)
