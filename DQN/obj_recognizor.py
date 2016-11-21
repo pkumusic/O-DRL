@@ -8,11 +8,14 @@
 # MsPacman-v0/pacman:  {'templates': [image1, image2 ...], 'thresholds': [float, float, ...]}
 #             bean:
 #               ...
+import numpy as np
+import pylab
+import matplotlib.pyplot as plt
 
 class TemplateMatcher(object):
     def __init__(self, template_dir):
         self.template_dir = template_dir
-        self.obj2index = {}  # e.g., {'pacman':0; 'bean': 1; ...}
+        self.obj2index = {}  # e.g., {'pacman':1; 'bean': 2; ...}
         self.index2obj = {}
         self.obj_dict = self.read_objects() # Use int index as keys.
 
@@ -60,9 +63,25 @@ class TemplateMatcher(object):
 
     def fake_match_all_objects(self, image):
         # Used for test the API for train DQN
-        self.obj2index = {'pacman':0, 'bean': 1}
-        self.index2obj = {0:'pacman', 1:'bean'}
-        return {0:[(10,20,10,20), (30,40,30,40)], 1:[(1,5,1,5)]}
+        self.obj2index = {'pacman':1, 'bean': 2}
+        self.index2obj = {1:'pacman', 2:'bean'}
+        obj_areas = {1:[(10,20,10,20), (30,40,30,40)], 2:[(1,5,1,5)]}
+        return obj_areas
+
+    @staticmethod
+    def process_image(image, obj_areas, method='swap_input_combine'):
+        if method == 'swap_input_combine':
+
+            plt.imshow(image)
+            plt.show()
+            image = np.zeros((image.shape[:2]))
+            for obj, areas in obj_areas.iteritems():
+                for area in areas:
+                    image[area[0]:area[1]+1,area[2]:area[3]+1] = obj
+            plt.imshow(image, cmap=pylab.gray())
+            plt.show()
+            exit()
+            return image
 
 
 if __name__ == '__main__':

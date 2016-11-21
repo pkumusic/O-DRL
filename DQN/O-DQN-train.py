@@ -37,6 +37,7 @@ from tensorpack.callbacks.base import PeriodicCallback
 
 import common
 from common import play_model, Evaluator, eval_model_multithread
+from obj_recognizor import TemplateMatcher
 
 BATCH_SIZE = 64
 IMAGE_SIZE = (84, 84)
@@ -61,9 +62,16 @@ EVAL_EPISODE = 50
 NUM_ACTIONS = None
 DOUBLE = None
 DUELING = None
+OBJECT_METHOD = None
+TEMPLATE_MATCHER = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
+    if OBJECT_METHOD == 'swap_input_combine':
+        def swap_image(img):
+            obj_areas = TEMPLATE_MATCHER.fake_match_all_objects(img)
+            return TemplateMatcher.process_image(img, obj_areas)
+        pl = MapPlayerState(pl, swap_image)
     def func(img):
         return cv2.resize(img, IMAGE_SIZE[::-1])
     pl = MapPlayerState(pl, func)
@@ -231,9 +239,17 @@ if __name__ == "__main__":
     parser.add_argument('--double', help='If use double DQN', default='t')
     parser.add_argument('--dueling', help='If use dueling method', default='f')
     parser.add_argument('--logdir', help='output directory', required=True)
+    parser.add_argument('--object', help='Method of incorporating object',
+                        choices=['add_input_separate', 'add_input_combine',
+                                 'swap_input_separate', 'swap_input_combine',
+                                 'add_feature_separate', 'add_feature_combine'], default='swap_input_combine')
     args=parser.parse_args()
     ENV_NAME = args.env
     LOG_DIR  = args.logdir
+    OBJECT_METHOD = args.object
+    TEMPLATE_MATCHER = TemplateMatcher('../obj/MsPacman-v0')
+
+    logger.info('Using Object Method: ' + OBJECT_METHOD)
 
     if args.double == 't':
         DOUBLE = True
