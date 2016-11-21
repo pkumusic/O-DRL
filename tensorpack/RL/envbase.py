@@ -9,8 +9,11 @@ from collections import defaultdict
 import random
 from ..utils import get_rng
 
+
 __all__ = ['RLEnvironment', 'NaiveRLEnvironment', 'ProxyPlayer',
            'DiscreteActionSpace']
+
+STEP = 0
 
 class RLEnvironment(object):
     __meta__ = ABCMeta
@@ -48,7 +51,7 @@ class RLEnvironment(object):
         """ reset all statistics counter"""
         self.stats = defaultdict(list)
 
-    def play_one_episode(self, func, stat='score'):
+    def play_one_episode(self, func, stat='score', task=None):
         """ play one episode for eval.
             :param func: call with the state and return an action
             :param stat: a key or list of keys in stats
@@ -58,10 +61,26 @@ class RLEnvironment(object):
             stat = [stat]
         while True:
             s = self.current_state()
+            if task == 'save_image': # Used in DQN-gym-run.py to sample images by loading model
+                import cv2
+                import matplotlib.pyplot as plt
+                import pylab
+                import numpy as np
+                global STEP
+                STEP += 1
+                file_name = '../obj/MsPacman-v0-sample/' + str(STEP)
+                img  = self.original_current_state()
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                plt.imshow(img, cmap=pylab.gray())
+                plt.savefig(file_name)
+                np.save(file_name, img)
+
             act = func(s)
             r, isOver = self.action(act)
             #print r
             if isOver:
+                if task == 'save_images':
+                    exit()
                 s = [self.stats[k] for k in stat]
                 self.reset_stat()
                 return s if len(s) > 1 else s[0]
@@ -118,6 +137,9 @@ class ProxyPlayer(RLEnvironment):
 
     def action(self, act):
         return self.player.action(act)
+
+    def original_current_state(self):
+        return self.player.original_current_state()
 
     @property
     def stats(self):

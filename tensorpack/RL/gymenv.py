@@ -44,6 +44,9 @@ class GymEnv(RLEnvironment):
         self.auto_restart = auto_restart
         self.viz = viz
 
+    def original_current_state(self):
+        return self._ob
+
     def restart_episode(self):
         self.rwd_counter.reset()
         self._ob = self.gymenv.reset()
