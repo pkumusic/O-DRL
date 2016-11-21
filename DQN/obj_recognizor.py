@@ -58,6 +58,12 @@ class TemplateMatcher(object):
         """
         pass
 
+    def fake_match_all_objects(self, image):
+        # Used for test the API for train DQN
+        self.obj2index = {'pacman':0, 'bean': 1}
+        self.index2obj = {0:'pacman', 1:'bean'}
+        return {0:[(10,20,10,20), (30,40,30,40)], 1:[(1,5,1,5)]}
+
 
 if __name__ == '__main__':
     tm = TemplateMatcher('../obj/MsPacman-v0')
