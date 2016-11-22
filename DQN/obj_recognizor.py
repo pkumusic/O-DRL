@@ -8,7 +8,19 @@
 # MsPacman-v0/pacman:  {'templates': [image1, image2 ...], 'thresholds': [float, float, ...]}
 #             bean:
 #               ...
-import cv2
+
+
+# threshoold
+# pellet: 0.88
+# others: 0.8
+
+
+# pickle
+# pickle.dump(data, outfile=open())
+# pickle.load(infile)
+
+
+import cv2, pickle, pprint
 import numpy as np
 import pylab
 import matplotlib.pyplot as plt
@@ -44,6 +56,7 @@ class TemplateMatcher(object):
         #TODO: combine matched_template_areas to create matched_areas of one object. May need to remove duplicates.
         return matched_areas
 
+
     def match_template(self, image, template, threshold=0.8):
         """
         Match the image with one single template. return the matched rectangular areas
@@ -61,7 +74,7 @@ class TemplateMatcher(object):
         loc = np.where(res >= threshold)
 
         for pt in zip(*loc[::-1]):
-            print pt
+            print pt[0]
             cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
 
         cv2.imwrite('res.png', img_rgb)
@@ -84,6 +97,7 @@ class TemplateMatcher(object):
         obj_areas = {1:[(10,20,10,20), (30,40,30,40)], 2:[(1,5,1,5)]}
         return obj_areas
 
+
     @staticmethod
     def process_image(image, obj_areas, method='swap_input_combine'):
         if method == 'swap_input_combine':
@@ -100,24 +114,45 @@ class TemplateMatcher(object):
             return image
 
 
-def generate_templates():
-    img_array = np.load('../obj/MsPacman-v0-sample/2.npy')
-    print img_array.shape
-
-    # use matplot to show image
-    # plt.imshow(img_array)
-    # plt.show()
-
-    # plt.imsave('test.png', img_array)
-    #
-    # img = img_array[80:92, 75:85]
-    # cv2.imwrite('template.png', img)
-
-
-
-generate_templates()
-
 if __name__ == '__main__':
     tm = TemplateMatcher('../obj/MsPacman-v0')
-    tm.match_template('test.png', 'template.npy')
+    # tm.match_template('test.png', '../obj/templates/ghost_3.png')
+    # tm.match_template('test.png', '../obj/templates/ghost_1.png')
+    # tm.match_template('test.png', '../obj/templates/ghost_1.png')
+    # tm.match_template('test.png', '../obj/templates/pacman.png')
+    # tm.match_template('test.png', '../obj/templates/pellet.png', threshold=0.88)
+    # tm.match_template('test.png', 'template.png')
 
+def generate_templates():
+    img_array = np.load('../obj/MsPacman-v0-sample/605  .npy')
+    # print img_array.shape
+
+    # use matplot to show image
+    plt.imshow(img_array)
+    plt.show()
+
+    plt.imsave('test.png', img_array)
+
+    # extract template
+    # img = img_array[80:92, 75:85]  ## extract ghost_left/right with 1.npy
+    # img = img_array[26:38, 95:105] ## extract ghost change with 600.npy
+    # img = img_array[102:106, 7:13]  ## extract dot with 600.npy
+    # img = img_array[145:154, 147:153]  ## extract pellets with 600.npy
+    # img = img_array[74:86, 28:38] ## extract pacman with 600.npy
+    # img = img_array[50:62, 78:89] ## extract cherry with 605.npy
+    # cv2.imwrite('template.png', img)
+
+# generate_templates()
+
+def thresholds():
+    out = {'ghost':[0.8, 0.8, 0.8], 'pacman':[0.8], 'cherry':[0.8], 'dot':[0.8], 'pellet':[0.8]}
+    outfile = open('../obj/thresholds.pkl', 'w')
+    pickle.dump(out, outfile)
+    outfile.close()
+
+    pkl_file = open('../obj/thresholds.pkl', 'r')
+    data = pickle.load(pkl_file)
+    pprint.pprint(data)
+    pkl_file.close()
+
+# thresholds()
