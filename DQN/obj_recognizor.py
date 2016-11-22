@@ -129,7 +129,7 @@ if __name__ == '__main__':
     # tm.match_template('test.png', 'template.png')
 
 def generate_templates():
-    img_array = np.load('../obj/MsPacman-v0-sample/605  .npy')
+    img_array = np.load('../obj/MsPacman-v0-sample/605.npy')
     # print img_array.shape
 
     # use matplot to show image
@@ -150,7 +150,7 @@ def generate_templates():
 # generate_templates()
 
 def thresholds():
-    out = {'ghost':[0.8, 0.8, 0.8], 'pacman':[0.8], 'cherry':[0.8], 'dot':[0.8], 'pellet':[0.8]}
+    out = {'ghost':[0.8, 0.8], 'pacman':[0.8], 'cherry':[0.8], 'dot':[0.8], 'pellet':[0.88], 'eatable':[0.8]}
     outfile = open('../obj/thresholds.pkl', 'w')
     pickle.dump(out, outfile)
     outfile.close()
@@ -160,4 +160,4 @@ def thresholds():
     pprint.pprint(data)
     pkl_file.close()
 
-# thresholds()
+#thresholds()

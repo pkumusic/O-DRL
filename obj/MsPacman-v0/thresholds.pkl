@@ -4,7 +4,6 @@ p1
 (lp2
 F0.8
 aF0.8
-aF0.8
 asS'cherry'
 p3
 (lp4
@@ -16,9 +15,13 @@ F0.8
 asS'pellet'
 p7
 (lp8
-F0.8
-asS'dot'
+F0.88
+asS'eatable'
 p9
 (lp10
+F0.8
+asS'dot'
+p11
+(lp12
 F0.8
 as.
