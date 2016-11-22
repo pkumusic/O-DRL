@@ -5,8 +5,9 @@
 
 # Template directory structure
 #
-# MsPacman-v0/pacman:  {'templates': [image1, image2 ...], 'thresholds': [float, float, ...]}
-#             bean:
+# MsPacman-v0/templates/cherry.png
+#                      /dot.png
+#             thresholds.pkl
 #               ...
 
 
@@ -25,12 +26,15 @@ import numpy as np
 import pylab
 import matplotlib.pyplot as plt
 from PIL import Image
+from collections import defaultdict
+THRESHOLDS_FILE = 'thresholds.pkl'
+TEMPLATES_DIR  = 'templates'
 
 class TemplateMatcher(object):
     def __init__(self, template_dir):
         self.template_dir = template_dir
-        self.obj2index, self.index2obj = self.read_objects() # Use int index as keys.
-
+        self.obj2index, self.index2obj, self.templates = self.read_objects() # Use int index as keys.
+        self.thresholds = self.read_thresholds()
 
     def match_all_objects(self, image):
         """ This is the API to extract objects for an image.
@@ -40,34 +44,34 @@ class TemplateMatcher(object):
         :return: obj_areas. {obj: [(left,right,top,bottom), ..., ]}
         """
         obj_areas = {}
-        for obj in self.obj_dict:
+        for obj in self.obj2index.keys():
             obj_areas[obj] = self.match_object(image, obj)
         return obj_areas
 
-
     def match_object(self, image, obj):
-        templates  = self.obj_dict[obj]['templates']
-        thresholds = self.obj_dict[obj]['thresholds']
+        templates  = self.templates[obj]
+        thresholds = self.thresholds[obj]
         assert len(templates) == len(thresholds)
         matched_areas = []
-        for i in xrange(len(templates)):
+        for i in xrange(len(thresholds)):
             matched_template_areas = self.match_template(image, templates[i], thresholds[i])
-        #TODO: combine matched_template_areas to create matched_areas of one object. May need to remove duplicates.
+            # TODO: combine matched_template_areas to create matched_areas of one object. May need to remove duplicates.
+            matched_areas.extend(matched_template_areas)
         return matched_areas
 
 
-    def match_template(self, image, template, threshold=0.8):
+    def match_template(self, image, template, threshold, show=False):
         """
         Match the image with one single template. return the matched rectangular areas
         :param image:
-        :param template:
+        :param template: template file name
         :param threshold:
         :return: [(left,right,top,bottom), (...)]
         """
         object_locs = []
-        img_rgb = cv2.imread(image)
+        img_rgb = image
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        template = cv2.imread(template, 0)
+        template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
         w, h = template.shape[::-1]
 
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
@@ -75,9 +79,11 @@ class TemplateMatcher(object):
 
         for pt in zip(*loc[::-1]):
             object_locs.append((pt[0], pt[0]+w, pt[1], pt[1] + h))
-            cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
-
-        # cv2.imwrite('res.png', img_rgb)
+            if show:
+                cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+        if show:
+            plt.imshow(img_rgb)
+            plt.show()
         return object_locs
 
 
@@ -89,18 +95,50 @@ class TemplateMatcher(object):
         return obj_areas
 
     def read_objects(self):
-        objects = set([])
-        for filename in glob.glob(self.template_dir+'/*'):
+        """
+        :return: objects: {'bean':{0: image, 1: image...}}
+        """
+        templates_path = os.path.join(self.template_dir, TEMPLATES_DIR)
+        objects = defaultdict(dict)
+        for filename in glob.glob(templates_path+'/*'):
+            template = cv2.imread(filename)
             object = os.path.basename(filename).split('.')[0]
-            object = object.split('_')[0]
-            objects.add(object)
-
+            infos = object.split('_')
+            if len(infos) == 1:
+                objects[object][0] = template
+            elif len(infos) == 2:
+                object, index = infos[0], int(infos[1])
+                objects[object][index] = template
+            else:
+                print "ERROR: template name should not include _ character."
+                exit()
         object_index, obj2index, index2obj = 0, {}, {}
-        for object in objects:
+        for object in objects.keys():
             obj2index[object] = object_index
             index2obj[object_index] = object
             object_index += 1
-        return obj2index, index2obj
+        pprint.pprint(obj2index)
+        pprint.pprint(index2obj)
+        return obj2index, index2obj, objects
+
+    def read_thresholds(self):
+        thresholds_path = os.path.join(self.template_dir, THRESHOLDS_FILE)
+        pkl_file = open(thresholds_path, 'r')
+        thresholds = pickle.load(pkl_file)
+        pkl_file.close()
+        return thresholds
+
+    def draw_extracted_image(self, image, extracted_objects):
+        for object, locs in extracted_objects.iteritems():
+            for loc in locs:
+                cv2.rectangle(image, (loc[0],loc[2]), (loc[1], loc[3]), (0, 0, 255), 1)
+                cv2.putText(image, object, (loc[0]-2, loc[2]), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 0), 1, cv2.LINE_AA)
+
+        plt.imshow(image)
+        plt.show()
+
+
+
 
     @staticmethod
     def process_image(image, obj_areas, method='swap_input_combine'):
@@ -118,8 +156,24 @@ class TemplateMatcher(object):
             return image
 
 
+
+
+
+
 if __name__ == '__main__':
-    tm = TemplateMatcher('../obj/MsPacman-v0-templates')
+    tm = TemplateMatcher('../obj/MsPacman-v0')
+    image = np.load('../obj/MsPacman-v0-sample/605.npy')
+    tm.thresholds = {'ghost':[0.7, 0.7], 'pacman':[0.8], 'cherry':[0.8], 'dot':[0.8], 'pellet':[0.88], 'eatable':[0.7]}
+
+    # Test on single template
+    #template = cv2.imread('../obj/MsPacman-v0/templates/eatable.png')
+    #tm.match_template(image, template, 0.7, show=True)
+
+    # Test on all objects
+    extracted_objects = tm.match_all_objects(image)
+    tm.draw_extracted_image(image, extracted_objects)
+
+
 
     # tm.match_template('test.png', '../obj/templates/ghost_3.png')
     # tm.match_template('test.png', '../obj/templates/ghost_1.png')
