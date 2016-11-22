@@ -20,7 +20,7 @@
 # pickle.load(infile)
 
 
-import cv2, pickle, pprint
+import cv2, pickle, pprint, glob, os
 import numpy as np
 import pylab
 import matplotlib.pyplot as plt
@@ -29,9 +29,8 @@ from PIL import Image
 class TemplateMatcher(object):
     def __init__(self, template_dir):
         self.template_dir = template_dir
-        self.obj2index = {}  # e.g., {'pacman':1; 'bean': 2; ...}
-        self.index2obj = {}
-        self.obj_dict = self.read_objects() # Use int index as keys.
+        self.obj2index, self.index2obj = self.read_objects() # Use int index as keys.
+
 
     def match_all_objects(self, image):
         """ This is the API to extract objects for an image.
@@ -65,6 +64,7 @@ class TemplateMatcher(object):
         :param threshold:
         :return: [(left,right,top,bottom), (...)]
         """
+        object_locs = []
         img_rgb = cv2.imread(image)
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         template = cv2.imread(template, 0)
@@ -74,21 +74,12 @@ class TemplateMatcher(object):
         loc = np.where(res >= threshold)
 
         for pt in zip(*loc[::-1]):
-            print pt[0]
+            object_locs.append((pt[0], pt[0]+w, pt[1], pt[1] + h))
             cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
 
-        cv2.imwrite('res.png', img_rgb)
+        # cv2.imwrite('res.png', img_rgb)
+        return object_locs
 
-
-
-    def read_objects(self):
-        """
-        Read obj files in the directory and create a dictionary contain the mapping from obj -> templates
-        Initialize obj2index and index2obj.
-        :return: {'obj1', templates}; where templates is a dictionary
-                                    like {'templates': [image1, image2 ...], 'thresholds': [float, float, ...]}
-        """
-        pass
 
     def fake_match_all_objects(self, image):
         # Used for test the API for train DQN
@@ -97,6 +88,19 @@ class TemplateMatcher(object):
         obj_areas = {1:[(10,20,10,20), (30,40,30,40)], 2:[(1,5,1,5)]}
         return obj_areas
 
+    def read_objects(self):
+        objects = set([])
+        for filename in glob.glob(self.template_dir+'/*'):
+            object = os.path.basename(filename).split('.')[0]
+            object = object.split('_')[0]
+            objects.add(object)
+
+        object_index, obj2index, index2obj = 0, {}, {}
+        for object in objects:
+            obj2index[object] = object_index
+            index2obj[object_index] = object
+            object_index += 1
+        return obj2index, index2obj
 
     @staticmethod
     def process_image(image, obj_areas, method='swap_input_combine'):
@@ -115,7 +119,8 @@ class TemplateMatcher(object):
 
 
 if __name__ == '__main__':
-    tm = TemplateMatcher('../obj/MsPacman-v0')
+    tm = TemplateMatcher('../obj/MsPacman-v0-templates')
+
     # tm.match_template('test.png', '../obj/templates/ghost_3.png')
     # tm.match_template('test.png', '../obj/templates/ghost_1.png')
     # tm.match_template('test.png', '../obj/templates/ghost_1.png')
