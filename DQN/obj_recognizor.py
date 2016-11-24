@@ -122,17 +122,24 @@ class TemplateMatcher(object):
         return obj2index, index2obj, objects
 
     def read_thresholds(self):
-        thresholds_path = os.path.join(self.template_dir, THRESHOLDS_FILE)
-        pkl_file = open(thresholds_path, 'r')
-        thresholds = pickle.load(pkl_file)
-        pkl_file.close()
-        return thresholds
+        #TODO: fine tune thresholds and save it to file
+        return             {'ghost': [0.7, 0.7],
+                           'pacman': [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+                           'cherry': [0.8],
+                           'dot': [0.8],
+                            'pellet': [0.88],
+                           'eatable': [0.7]}
+        # thresholds_path = os.path.join(self.template_dir, THRESHOLDS_FILE)
+        # pkl_file = open(thresholds_path, 'r')
+        # thresholds = pickle.load(pkl_file)
+        # pkl_file.close()
+        # return thresholds
 
     def draw_extracted_image(self, image, extracted_objects):
         for object, locs in extracted_objects.iteritems():
             for loc in locs:
                 cv2.rectangle(image, (loc[0],loc[2]), (loc[1], loc[3]), (0, 0, 255), 1)
-                cv2.putText(image, object, (loc[0]-2, loc[2]), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(image, object, (loc[0]-2, loc[2]), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
 
         plt.imshow(image)
         plt.show()
@@ -162,16 +169,16 @@ class TemplateMatcher(object):
 
 if __name__ == '__main__':
     tm = TemplateMatcher('../obj/MsPacman-v0')
-    image = np.load('../obj/MsPacman-v0-sample/605.npy')
-    tm.thresholds = {'ghost':[0.7, 0.7], 'pacman':[0.8], 'cherry':[0.8], 'dot':[0.8], 'pellet':[0.88], 'eatable':[0.7]}
-
     # Test on single template
     #template = cv2.imread('../obj/MsPacman-v0/templates/eatable.png')
     #tm.match_template(image, template, 0.7, show=True)
 
     # Test on all objects
-    extracted_objects = tm.match_all_objects(image)
-    tm.draw_extracted_image(image, extracted_objects)
+    for i in xrange(100, 200):
+        i = np.random.randint(1, 1229)
+        image = np.load('../obj/MsPacman-v0-sample/%s.npy'%i)
+        extracted_objects = tm.match_all_objects(image)
+        tm.draw_extracted_image(image, extracted_objects)
 
 
 
