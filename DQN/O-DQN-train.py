@@ -67,21 +67,35 @@ TEMPLATE_MATCHER = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
+    global NUM_ACTIONS
+    NUM_ACTIONS = pl.get_action_space().num_actions()
     if OBJECT_METHOD == 'swap_input_combine':
         def swap_image(img):
             obj_areas = TEMPLATE_MATCHER.fake_match_all_objects(img)
             return TemplateMatcher.process_image(img, obj_areas)
         pl = MapPlayerState(pl, swap_image)
-    def func(img):
-        return cv2.resize(img, IMAGE_SIZE[::-1])
-    pl = MapPlayerState(pl, func)
+    if OBJECT_METHOD == 'add_input_separate':
+        # For the final image, add the object layers of the image to the channels
+        # For each image, use the grey scale image.
+        # The number of channels become 4 + num_obj
 
-    global NUM_ACTIONS
-    NUM_ACTIONS = pl.get_action_space().num_actions()
-    if not train:
-        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
-        pl = PreventStuckPlayer(pl, 30, 1)
-    pl = LimitLengthPlayer(pl, 40000)
+        # 1. Convert current image to grey scale
+        def grey(img):
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            return img
+        pl = MapPlayerState(pl, grey)
+        print pl.current_state().shape
+        exit()
+
+
+    #def func(img):
+    #    return cv2.resize(img, IMAGE_SIZE[::-1])
+    #pl = MapPlayerState(pl, func)
+
+    #if not train:
+    #    pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+    #    pl = PreventStuckPlayer(pl, 30, 1)
+    #pl = LimitLengthPlayer(pl, 40000)
     return pl
 common.get_player = get_player  # so that eval functions in common can use the player
 
@@ -99,6 +113,8 @@ class Model(ModelDesc):
     def _get_DQN_prediction(self, image):
         """ image: [0,255]"""
         image = image / 255.0
+        #print tf.shape(image)
+        #exit()
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
@@ -242,7 +258,7 @@ if __name__ == "__main__":
     parser.add_argument('--object', help='Method of incorporating object',
                         choices=['add_input_separate', 'add_input_combine',
                                  'swap_input_separate', 'swap_input_combine',
-                                 'add_feature_separate', 'add_feature_combine'], default='swap_input_combine')
+                                 'add_feature_separate', 'add_feature_combine'], default='add_input_separate')
     args=parser.parse_args()
     ENV_NAME = args.env
     LOG_DIR  = args.logdir
