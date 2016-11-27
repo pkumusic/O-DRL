@@ -103,7 +103,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         IMAGE_SHAPE3 = IMAGE_SIZE + (6,)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
         FRAME_HISTORY = 4
-        #pl = MapPlayerState(pl, resize)
+        pl = MapPlayerState(pl, resize)
         #if not train:
         #  pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
