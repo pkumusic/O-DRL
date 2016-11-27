@@ -1,6 +1,12 @@
 # O-DRL
 Object Sensitive Deep Reinforcement Learning
 
+# Some baselines
+[DQN](https://gym.openai.com/evaluations/eval_riHeA66BRujxsfQHz6FDA)
+[DDQN](https://gym.openai.com/evaluations/eval_3XssszDyStmC4tkhx8wdcg)
+[DDDQN](https://gym.openai.com/evaluations/eval_7UlV9il3RFKNyciZOVu2g)
+[Dueling](https://gym.openai.com/evaluations/eval_6fKnCcOTqOxnbW0JwJLTw)
+
 # TODO List for the Deep Learning Project (Yuezhang, Tian, Jing) 
 + Choose the game we wanna use. (Having different objects) (Ranked by preference for experiments) (Done)
     * Freeway-v0: A chicken is trying to across the street while avoid hitting by cars 
