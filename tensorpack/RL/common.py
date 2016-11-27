@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File: common.py
-# Author: Yuxin Wu <ppwwyyxxc@gmail.com>
+# Project for 10807
 
 
 import numpy as np
@@ -81,3 +81,25 @@ class MapPlayerState(ProxyPlayer):
 
     def current_state(self):
         return self.func(self.player.current_state())
+
+class ObjectSensitivePlayer(ProxyPlayer):
+    def __init__(self, player, templateMatcher, method):
+        super(ObjectSensitivePlayer, self).__init__(player)
+        self.templateMatcher = templateMatcher
+        self.method = method
+
+    def current_state(self):
+        img = self.player.original_current_state()
+        obj_areas = self.templateMatcher.match_all_objects(img)
+        new_img = self.templateMatcher.process_image(img, obj_areas, self.method)
+        #for i in xrange(new_img.shape[2]):
+        #    import matplotlib.pyplot as plt
+        #    plt.imshow(new_img[:,:,i])
+        #    plt.show()
+        return new_img
+
+def show_images(img):
+    import matplotlib.pyplot as plt
+    for i in xrange(img.shape[2]):
+        plt.imshow(img[:,:,i])
+        plt.show()

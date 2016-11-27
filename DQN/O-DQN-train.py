@@ -19,7 +19,7 @@ from tensorpack.tfutils.summary import add_moving_summary, add_param_summary
 from tensorpack.RL.expreplay import ExpReplay
 from tensorpack.tfutils.sessinit import SaverRestore
 from tensorpack.train.queue import QueueInputTrainer
-from tensorpack.RL.common import MapPlayerState
+from tensorpack.RL.common import MapPlayerState, ObjectSensitivePlayer, show_images
 from tensorpack.RL.gymenv import GymEnv
 from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
 from tensorpack.RL.history import HistoryFramePlayer
@@ -41,7 +41,7 @@ from obj_recognizor import TemplateMatcher
 
 BATCH_SIZE = 64
 IMAGE_SIZE = (84, 84)
-FRAME_HISTORY = 4
+FRAME_HISTORY = 1
 ACTION_REPEAT = 4
 
 CHANNEL = FRAME_HISTORY * 3
@@ -55,8 +55,8 @@ END_EXPLORATION = 0.1
 MEMORY_SIZE = 1e6
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
-INIT_MEMORY_SIZE = 5e4
-STEP_PER_EPOCH = 1000
+INIT_MEMORY_SIZE = 5 #5e4
+STEP_PER_EPOCH = 5000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
@@ -80,18 +80,25 @@ def get_player(viz=False, train=False, dumpdir=None):
         # The number of channels become 4 + num_obj
 
         # 1. Convert current image to grey scale
+        # History = 1, grey + 6 objects = 210*160*7
+        global IMAGE_SHAPE3
+        IMAGE_SHAPE3 = (210, 160, 7)
         def grey(img):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             return img
         pl = MapPlayerState(pl, grey)
-        print pl.current_state().shape
-        exit()
+        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
+        # import matplotlib.pyplot as plt
+        # import pylab
+        # plt.imshow(pl.current_state(), cmap=pylab.gray())
+        # plt.show()
+        #print pl.current_state().shape
+        #exit()
 
 
     #def func(img):
     #    return cv2.resize(img, IMAGE_SIZE[::-1])
     #pl = MapPlayerState(pl, func)
-
     #if not train:
     #    pl = HistoryFramePlayer(pl, FRAME_HISTORY)
     #    pl = PreventStuckPlayer(pl, 30, 1)

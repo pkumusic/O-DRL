@@ -117,8 +117,9 @@ class TemplateMatcher(object):
             obj2index[object] = object_index
             index2obj[object_index] = object
             object_index += 1
-        pprint.pprint(obj2index)
-        pprint.pprint(index2obj)
+        #pprint.pprint(obj2index)
+
+        print "objects", index2obj
         return obj2index, index2obj, objects
 
     def read_thresholds(self):
@@ -145,10 +146,7 @@ class TemplateMatcher(object):
         plt.show()
 
 
-
-
-    @staticmethod
-    def process_image(image, obj_areas, method='swap_input_combine'):
+    def process_image(self, image, obj_areas, method='swap_input_combine', debug=False):
         if method == 'swap_input_combine':
 
             plt.imshow(image)
@@ -161,6 +159,29 @@ class TemplateMatcher(object):
             plt.show()
             exit()
             return image
+        if method == 'add_input_separate':
+            if debug:
+                subplot_index = 1
+                plt.subplot(3,3,subplot_index)
+                subplot_index += 1
+                plt.imshow(image)
+                plt.subplot(3, 3, subplot_index)
+            obj_images = np.zeros((image.shape[0], image.shape[1], len(self.obj2index)))
+            for obj, areas in obj_areas.iteritems():
+                #print obj, areas
+                obj_index = self.obj2index[obj]
+                for area in areas:
+                    obj_images[area[2]:area[3]+1, area[0]:area[1]+1, obj_index] = 1
+            if debug:
+                for i in xrange(len(self.obj2index)):
+                    plt.subplot(3, 3, subplot_index)
+                    subplot_index += 1
+                    plt.title(self.index2obj[i])
+                    plt.imshow(obj_images[:,:,i])
+                plt.show()
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).reshape(image.shape[0], image.shape[1], 1)
+            new_image = np.concatenate((image, obj_images), axis=2)
+            return new_image
 
 
 
