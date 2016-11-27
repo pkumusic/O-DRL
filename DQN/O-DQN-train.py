@@ -88,13 +88,10 @@ def get_player(viz=False, train=False, dumpdir=None):
             return img
         pl = MapPlayerState(pl, grey)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
-        # import matplotlib.pyplot as plt
-        # import pylab
-        # plt.imshow(pl.current_state(), cmap=pylab.gray())
-        # plt.show()
-        #print pl.current_state().shape
-        #exit()
 
+        # print pl.current_state()
+        #show_images(pl.current_state())
+        # exit()
 
     #def func(img):
     #    return cv2.resize(img, IMAGE_SIZE[::-1])
@@ -119,9 +116,8 @@ class Model(ModelDesc):
 
     def _get_DQN_prediction(self, image):
         """ image: [0,255]"""
-        image = image / 255.0
+        #image = image / 255.0
         #print tf.shape(image)
-        #exit()
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
