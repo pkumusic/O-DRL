@@ -82,7 +82,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         # 1. Convert current image to grey scale
         # History = 1, grey + 6 objects = 210*160*7
         global IMAGE_SHAPE3
-        IMAGE_SHAPE3 = (210, 160, 7)
+        IMAGE_SHAPE3 = IMAGE_SIZE + (7,)
         def grey(img):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             return img
@@ -92,10 +92,10 @@ def get_player(viz=False, train=False, dumpdir=None):
         # print pl.current_state()
         #show_images(pl.current_state())
         # exit()
-
-    #def func(img):
-    #    return cv2.resize(img, IMAGE_SIZE[::-1])
-    #pl = MapPlayerState(pl, func)
+    def func(img):
+        return cv2.resize(img, IMAGE_SIZE[::-1])
+    pl = MapPlayerState(pl, func)
+    show_images(pl.current_state())
     #if not train:
     #    pl = HistoryFramePlayer(pl, FRAME_HISTORY)
     #    pl = PreventStuckPlayer(pl, 30, 1)
