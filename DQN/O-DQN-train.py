@@ -41,11 +41,11 @@ from obj_recognizor import TemplateMatcher
 
 BATCH_SIZE = 64
 IMAGE_SIZE = (84, 84)
-FRAME_HISTORY = 1
+FRAME_HISTORY = None #4
 ACTION_REPEAT = 4
 
-CHANNEL = FRAME_HISTORY * 3
-IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
+#CHANNEL = FRAME_HISTORY * 3
+IMAGE_SHAPE3 = None #IMAGE_SIZE + (CHANNEL,)
 GAMMA = 0.99
 
 INIT_EXPLORATION = 1
@@ -69,6 +69,8 @@ def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
     global NUM_ACTIONS
     NUM_ACTIONS = pl.get_action_space().num_actions()
+    def resize(img):
+        return cv2.resize(img, IMAGE_SIZE[::-1])
     if OBJECT_METHOD == 'swap_input_combine':
         def swap_image(img):
             obj_areas = TEMPLATE_MATCHER.fake_match_all_objects(img)
@@ -83,23 +85,34 @@ def get_player(viz=False, train=False, dumpdir=None):
         # History = 1, grey + 6 objects = 210*160*7
         global IMAGE_SHAPE3
         IMAGE_SHAPE3 = IMAGE_SIZE + (7,)
+        global FRAME_HISTORY
+        FRAME_HISTORY = 1
         def grey(img):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             return img
         pl = MapPlayerState(pl, grey)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
+        pl = MapPlayerState(pl, resize)
 
-        # print pl.current_state()
+    if OBJECT_METHOD == 'swap_input_separate':
+        # For the final image, only use the object layers
+        # num_obj
+        # Interesting thing: No wall information here
+        # TODO: If we need to add walls
+        # History = 4, objects = 80*80*6
+        global IMAGE_SHAPE3
+        IMAGE_SHAPE3 = IMAGE_SIZE + (6,)
+        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
+        global FRAME_HISTORY
+        FRAME_HISTORY = 4
+        pl = MapPlayerState(pl, resize)
+        #if not train:
+        #  pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
         # exit()
-    def func(img):
-        return cv2.resize(img, IMAGE_SIZE[::-1])
-    pl = MapPlayerState(pl, func)
+    pl = LimitLengthPlayer(pl, 40000)
     #show_images(pl.current_state())
-    #if not train:
-    #    pl = HistoryFramePlayer(pl, FRAME_HISTORY)
-    #    pl = PreventStuckPlayer(pl, 30, 1)
-    #pl = LimitLengthPlayer(pl, 40000)
+    #exit()
     return pl
 common.get_player = get_player  # so that eval functions in common can use the player
 
