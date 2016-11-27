@@ -68,6 +68,8 @@ TEMPLATE_MATCHER = None
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
     global NUM_ACTIONS
+    global IMAGE_SHAPE3
+    global FRAME_HISTORY
     NUM_ACTIONS = pl.get_action_space().num_actions()
     def resize(img):
         return cv2.resize(img, IMAGE_SIZE[::-1])
@@ -83,9 +85,7 @@ def get_player(viz=False, train=False, dumpdir=None):
 
         # 1. Convert current image to grey scale
         # History = 1, grey + 6 objects = 210*160*7
-        global IMAGE_SHAPE3
         IMAGE_SHAPE3 = IMAGE_SIZE + (7,)
-        global FRAME_HISTORY
         FRAME_HISTORY = 1
         def grey(img):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -100,12 +100,10 @@ def get_player(viz=False, train=False, dumpdir=None):
         # Interesting thing: No wall information here
         # TODO: If we need to add walls
         # History = 4, objects = 80*80*6
-        global IMAGE_SHAPE3
         IMAGE_SHAPE3 = IMAGE_SIZE + (6,)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
-        global FRAME_HISTORY
         FRAME_HISTORY = 4
-        pl = MapPlayerState(pl, resize)
+        #pl = MapPlayerState(pl, resize)
         #if not train:
         #  pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())

@@ -183,6 +183,14 @@ class TemplateMatcher(object):
             image = image / 255.0
             new_image = np.concatenate((image, obj_images), axis=2)
             return new_image
+        if method == 'swap_input_separate':
+            obj_images = np.zeros((image.shape[0], image.shape[1], len(self.obj2index)))
+            for obj, areas in obj_areas.iteritems():
+                # print obj, areas
+                obj_index = self.obj2index[obj]
+                for area in areas:
+                    obj_images[area[2]:area[3] + 1, area[0]:area[1] + 1, obj_index] = 1
+            return obj_images
 
 
 
