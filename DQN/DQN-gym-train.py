@@ -19,7 +19,7 @@ from tensorpack.tfutils.summary import add_moving_summary, add_param_summary
 from tensorpack.RL.expreplay import ExpReplay
 from tensorpack.tfutils.sessinit import SaverRestore
 from tensorpack.train.queue import QueueInputTrainer
-from tensorpack.RL.common import MapPlayerState
+from tensorpack.RL.common import MapPlayerState, show_images
 from tensorpack.RL.gymenv import GymEnv
 from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
 from tensorpack.RL.history import HistoryFramePlayer
@@ -32,6 +32,8 @@ import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
+import PIL
+from PIL import Image
 
 
 
@@ -39,7 +41,8 @@ import common
 from common import play_model, Evaluator, eval_model_multithread
 
 BATCH_SIZE = 64
-IMAGE_SIZE = (84, 84)
+#IMAGE_SIZE = (84, 84)
+IMAGE_SIZE = (210, 160)
 FRAME_HISTORY = 4
 ACTION_REPEAT = 4
 
@@ -67,6 +70,8 @@ def get_player(viz=False, train=False, dumpdir=None):
     def func(img):
         return cv2.resize(img, IMAGE_SIZE[::-1])
     pl = MapPlayerState(pl, func)
+    show_images(pl.current_state())
+
 
     global NUM_ACTIONS
     NUM_ACTIONS = pl.get_action_space().num_actions()
@@ -94,10 +99,12 @@ class Model(ModelDesc):
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
-            l = Conv2D('conv1', l, out_channel=32, kernel_shape=5)
+            l = Conv2D('conv1', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool1', l, 2)
-            l = Conv2D('conv2', l, out_channel=64, kernel_shape=4)
+            l = Conv2D('conv2', l, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool2', l, 2)
+            l = Conv2D('conv3', l, out_channel=64, kernel_shape=4)
+            l = MaxPooling('pool3', l, 2)
             l = Conv2D('conv3', l, out_channel=64, kernel_shape=3)
 
             l = FullyConnected('fc0', l, 512, nl=lambda x, name: LeakyReLU.f(x, 0.01, name))
