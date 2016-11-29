@@ -32,6 +32,7 @@ import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
+from skimage.transform import resize
 
 
 
@@ -56,7 +57,7 @@ MEMORY_SIZE = 1e6
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e4
-STEP_PER_EPOCH = 1000
+STEP_PER_EPOCH = 5000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
@@ -72,7 +73,8 @@ def get_player(viz=False, train=False, dumpdir=None):
     global FRAME_HISTORY
     NUM_ACTIONS = pl.get_action_space().num_actions()
     def resize(img):
-        return cv2.resize(img, IMAGE_SIZE[::-1])
+        #return cv2.resize(img, IMAGE_SIZE[::-1])
+        return resize(img, IMAGE_SIZE)
     if OBJECT_METHOD == 'swap_input_combine':
         def swap_image(img):
             obj_areas = TEMPLATE_MATCHER.fake_match_all_objects(img)
