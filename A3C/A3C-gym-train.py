@@ -24,6 +24,7 @@ from tensorpack.tfutils import symbolic_functions as symbf
 from tensorpack.RL import *
 import common
 from common import (play_model, Evaluator, eval_model_multithread)
+from tensorpack.RL.simulator import SimulatorProcess
 
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
