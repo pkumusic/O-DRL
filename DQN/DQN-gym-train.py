@@ -67,9 +67,9 @@ DUELING = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
-    def func(img):
-        return cv2.resize(img, IMAGE_SIZE[::-1])
-    pl = MapPlayerState(pl, func)
+    #def func(img):
+    #    return cv2.resize(img, IMAGE_SIZE[::-1])
+    #pl = MapPlayerState(pl, func)
     show_images(pl.current_state())
 
 
@@ -105,7 +105,7 @@ class Model(ModelDesc):
             l = MaxPooling('pool2', l, 2)
             l = Conv2D('conv3', l, out_channel=64, kernel_shape=4)
             l = MaxPooling('pool3', l, 2)
-            l = Conv2D('conv3', l, out_channel=64, kernel_shape=3)
+            l = Conv2D('conv4', l, out_channel=64, kernel_shape=3)
 
             l = FullyConnected('fc0', l, 512, nl=lambda x, name: LeakyReLU.f(x, 0.01, name))
             # the original arch
