@@ -70,7 +70,7 @@ def get_player(viz=False, train=False, dumpdir=None):
     def func(img):
         return resize(img, IMAGE_SIZE)
     pl = MapPlayerState(pl, func)
-    show_images(pl.current_state())
+    #show_images(pl.current_state())
 
 
     global NUM_ACTIONS
