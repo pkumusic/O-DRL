@@ -110,7 +110,7 @@ def get_config(cifar_classnum):
 
     sess_config = get_default_sess_config(0.5)
 
-    lr = symbf.get_scalar_var('learning_rate', 1e-2, summary=True)
+    lr = symbf.get_scalar_var('learning_rate', 1e-2)
     def lr_func(lr):
         if lr < 3e-5:
             raise StopTraining()
