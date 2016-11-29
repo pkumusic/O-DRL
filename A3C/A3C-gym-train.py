@@ -32,7 +32,7 @@ CHANNEL = FRAME_HISTORY * 3
 IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
 
 LOCAL_TIME_MAX = 5
-STEP_PER_EPOCH = 6000
+STEP_PER_EPOCH = 5000
 EVAL_EPISODE = 50
 BATCH_SIZE = 128
 SIMULATOR_PROC = 50
@@ -174,7 +174,7 @@ class MySimulatorMaster(SimulatorMaster, Callback):
             client.memory = []
 
 def get_config():
-    logger.auto_set_dir()
+    logger.set_logger_dir(os.path.join('train_log', LOG_DIR))
     M = Model()
 
     name_base = str(uuid.uuid1())[:6]
@@ -220,8 +220,10 @@ if __name__ == '__main__':
     parser.add_argument('--env', help='env', required=True)
     parser.add_argument('--task', help='task to perform',
             choices=['play', 'eval', 'train'], default='train')
+    parser.add_argument('--logdir', help='output directory', required=True)
     args = parser.parse_args()
 
+    LOG_DIR = args.logdir
     ENV_NAME = args.env
     assert ENV_NAME
     p = get_player(); del p    # set NUM_ACTIONS
