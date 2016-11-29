@@ -34,6 +34,7 @@ from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
 import PIL
 from PIL import Image
+from skimage.transform import resize
 
 
 
@@ -41,8 +42,7 @@ import common
 from common import play_model, Evaluator, eval_model_multithread
 
 BATCH_SIZE = 64
-#IMAGE_SIZE = (84, 84)
-IMAGE_SIZE = (210, 160)
+IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
 ACTION_REPEAT = 4
 
@@ -67,10 +67,10 @@ DUELING = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
-    #def func(img):
-    #    return cv2.resize(img, IMAGE_SIZE[::-1])
-    #pl = MapPlayerState(pl, func)
-    #show_images(pl.current_state())
+    def func(img):
+        return resize(img, IMAGE_SIZE)
+    pl = MapPlayerState(pl, func)
+    show_images(pl.current_state())
 
 
     global NUM_ACTIONS
@@ -99,13 +99,11 @@ class Model(ModelDesc):
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
-            l = Conv2D('conv1', image, out_channel=32, kernel_shape=5)
+            l = Conv2D('conv1', l, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool1', l, 2)
-            l = Conv2D('conv2', l, out_channel=32, kernel_shape=5)
+            l = Conv2D('conv2', l, out_channel=64, kernel_shape=4)
             l = MaxPooling('pool2', l, 2)
-            l = Conv2D('conv3', l, out_channel=64, kernel_shape=4)
-            l = MaxPooling('pool3', l, 2)
-            l = Conv2D('conv4', l, out_channel=64, kernel_shape=3)
+            l = Conv2D('conv3', l, out_channel=64, kernel_shape=3)
 
             l = FullyConnected('fc0', l, 512, nl=lambda x, name: LeakyReLU.f(x, 0.01, name))
             # the original arch
