@@ -32,11 +32,6 @@ import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
-import PIL
-from PIL import Image
-from skimage.transform import resize
-
-
 
 import common
 from common import play_model, Evaluator, eval_model_multithread
@@ -68,7 +63,7 @@ DUELING = None
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
     def func(img):
-        return resize(img, IMAGE_SIZE)
+        return cv2.resize(img, IMAGE_SIZE)
     pl = MapPlayerState(pl, func)
     #show_images(pl.current_state())
 
