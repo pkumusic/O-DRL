@@ -73,40 +73,50 @@ def get_player(viz=False, train=False, dumpdir=None):
     NUM_ACTIONS = pl.get_action_space().num_actions()
     def resize(img):
         return cv2.resize(img, IMAGE_SIZE)
+    def grey(img):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = resize(img)
+        img = img[:, :, np.newaxis] / 255.0
+        return img
     if OBJECT_METHOD == 'swap_input_combine':
+        # swap the input with combined object image
         FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY,)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
-        # show_images(pl.current_state())
+        #show_images(pl.current_state())
+
+    if OBJECT_METHOD == 'add_input_combine':
+        # add the input with combined object image for each history
+        FRAME_HISTORY = 4
+        IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * 2,)
+        pl = MapPlayerState(pl, grey)
+        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
+        pl = HistoryFramePlayer(pl, 4)
+        show_images(pl.current_state())
 
     if OBJECT_METHOD == 'add_input_separate':
-        # For the final image, add the object layers of the image to the channels
+        # For the current state, add the object images
+        # (his1, his2, his3, cur, obj1_cur, obj2_cur...)
         # For each image, use the grey scale image, and resize it to 84 * 84
-        # The number of channels become 4 + num_obj
         FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY + len(TEMPLATE_MATCHER.index2obj),)
-
-        def grey(img):
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            img = resize(img)
-            img = img[:, :, np.newaxis] / 255.0
-            return img
         pl = MapPlayerState(pl, grey)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         #show_images(pl.current_state())
 
     if OBJECT_METHOD == 'swap_input_separate':
-        # For the final image, only use the object layers
-        # Interesting thing: No wall information here
+        # swap the input images with object images
+        # (obj1_his1, obj2_his1, obj1_his2, obj2_his2, ... )
         # TODO: If we need to add walls
-        # History = 4, objects = 80*80*6
+        # Interesting thing is we don't have any wall info here
         FRAME_HISTORY = 1
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * len(TEMPLATE_MATCHER.index2obj),)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
+
     pl = LimitLengthPlayer(pl, 40000)
     #show_images(pl.current_state())
     #exit()

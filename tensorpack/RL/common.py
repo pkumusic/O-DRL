@@ -102,9 +102,17 @@ class ObjectSensitivePlayer(ProxyPlayer):
             obj_images = self.func(obj_images)
             return obj_images
         elif self.method == 'swap_input_combine':
-            obj_images = obj_images[:,:,np.newaxis]
             obj_images /= float(len(self.templateMatcher.index2obj))
+            obj_images = self.func(obj_images)
+            obj_images = obj_images[:, :, np.newaxis]
             return obj_images
+        elif self.method == 'add_input_combine':
+            obj_images /= float(len(self.templateMatcher.index2obj))
+            obj_images = self.func(obj_images)
+            obj_images = obj_images[:, :, np.newaxis]
+            state = self.player.current_state()
+            new_state = np.concatenate((state, obj_images), axis=2)
+            return new_state
 
 
 def show_images(img):
