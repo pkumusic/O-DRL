@@ -1,15 +1,19 @@
-Reproduce the following reinforcement learning methods:
+Implementing DQN, DDQN, Dueling DQN and DDDQN with tensorpack.
 
-+ Nature-DQN in:
-[Human-level Control Through Deep Reinforcement Learning](http://www.nature.com/nature/journal/v518/n7540/full/nature14236.html)
+Implementing Objecti-Sensitive DQNs (O-DQNs).
 
-+ Double-DQN in:
-[Deep Reinforcement Learning with Double Q-learning](http://arxiv.org/abs/1509.06461)
+# Different methods to incorporate objects
+## Combine/Separate
++ If we combine or separate the extracted objects to the same or separate images. TODO: Add examples. 
+## Add/Swap
++ Whether we add the object features to the original images or completely swap. 
+## Input/Feature
++ Where we input our feature. 
 
-## For turtle machines
+# For turtle machines
+About 15 iters/s when using an empty GPU card. 
 
-
-## From tensorpack
+# From tensorpack
 DQN typically took 2 days of training to reach a score of 400 on breakout game.
 My Batch-A3C implementation only took <2 hours.
 Both were trained on one GPU with an extra GPU for simulation.
@@ -18,17 +22,14 @@ The x-axis is the number of iterations, not wall time.
 Iteration speed on Tesla M40 is about 9.7it/s for B-A3C.
 D-DQN is faster at the beginning but will converge to 12it/s due of exploration annealing.
 
-## How to use
+# How to use
 
-Download [atari roms](https://github.com/openai/atari-py/tree/master/atari_py/atari_roms) to
-`$TENSORPACK_DATASET/atari_rom` (defaults to tensorpack/dataflow/dataset/atari_rom).
-
-To train:
+To train DQNs:
 ```
-./DQN.py --rom breakout.bin --gpu 0
+python DQN-gym-train.py --env MsPacman-v0 --logdir test --gpu 0 --double t --dueling f
 ```
 
-To visualize the agent:
+To visualize and submit to gyn:
 ```
-./DQN.py --rom breakout.bin --task play --load trained.model
+python DQN-gym-run.py --env MsPacman-v0 --load <model-file> --gpu 0 --double t --dueling f --output folder --api <your-gym-api>
 ```
