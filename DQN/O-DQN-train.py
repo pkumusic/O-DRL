@@ -32,8 +32,7 @@ import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
-from skimage.transform import resize
-
+import numpy as np
 
 
 import common
@@ -53,10 +52,10 @@ INIT_EXPLORATION = 1
 EXPLORATION_EPOCH_ANNEAL = 0.01
 END_EXPLORATION = 0.1
 
-MEMORY_SIZE = 1e6
+MEMORY_SIZE = 2.5e5#1e6
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
-INIT_MEMORY_SIZE = 5e4
+INIT_MEMORY_SIZE = 1.25e4#5e4
 STEP_PER_EPOCH = 5000
 EVAL_EPISODE = 50
 
@@ -73,8 +72,7 @@ def get_player(viz=False, train=False, dumpdir=None):
     global FRAME_HISTORY
     NUM_ACTIONS = pl.get_action_space().num_actions()
     def resize(img):
-        #return cv2.resize(img, IMAGE_SIZE[::-1])
-        return resize(img, IMAGE_SIZE)
+        return cv2.resize(img, IMAGE_SIZE)
     if OBJECT_METHOD == 'swap_input_combine':
         def swap_image(img):
             obj_areas = TEMPLATE_MATCHER.fake_match_all_objects(img)
@@ -82,19 +80,22 @@ def get_player(viz=False, train=False, dumpdir=None):
         pl = MapPlayerState(pl, swap_image)
     if OBJECT_METHOD == 'add_input_separate':
         # For the final image, add the object layers of the image to the channels
-        # For each image, use the grey scale image.
+        # For each image, use the grey scale image, and resize it to 84 * 84
         # The number of channels become 4 + num_obj
+        global FRAME_HISTORY
+        FRAME_HISTORY = 4
+        global IMAGE_SHAPE3
+        IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY + len(TEMPLATE_MATCHER.index2obj),)
 
-        # 1. Convert current image to grey scale
-        # History = 1, grey + 6 objects = 210*160*7
-        IMAGE_SHAPE3 = IMAGE_SIZE + (7,)
-        FRAME_HISTORY = 1
         def grey(img):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img = resize(img)
+            img = img[:, :, np.newaxis] / 255.0
             return img
         pl = MapPlayerState(pl, grey)
-        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
-        pl = MapPlayerState(pl, resize)
+        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
+        #show_images(pl.current_state())
 
     if OBJECT_METHOD == 'swap_input_separate':
         # For the final image, only use the object layers
@@ -236,8 +237,8 @@ def get_config():
             end_exploration=END_EXPLORATION,
             exploration_epoch_anneal=EXPLORATION_EPOCH_ANNEAL,
             update_frequency=4,
-            reward_clip=(-1, 1),
-            history_len=FRAME_HISTORY)
+            #reward_clip=(-1, 1),
+            history_len=1)#FRAME_HISTORY)
 
     lr = tf.Variable(0.001, trainable=False, name='learning_rate')
     tf.scalar_summary('learning_rate', lr)

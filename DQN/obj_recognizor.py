@@ -179,10 +179,10 @@ class TemplateMatcher(object):
                     plt.title(self.index2obj[i])
                     plt.imshow(obj_images[:,:,i])
                 plt.show()
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).reshape(image.shape[0], image.shape[1], 1)
-            image = image / 255.0
-            new_image = np.concatenate((image, obj_images), axis=2)
-            return new_image
+            #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).reshape(image.shape[0], image.shape[1], 1)
+            #image = image / 255.0
+            #new_image = np.concatenate((image, obj_images), axis=2)
+            return obj_images
         if method == 'swap_input_separate':
             obj_images = np.zeros((image.shape[0], image.shape[1], len(self.obj2index)))
             for obj, areas in obj_areas.iteritems():

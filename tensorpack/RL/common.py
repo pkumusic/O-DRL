@@ -83,20 +83,20 @@ class MapPlayerState(ProxyPlayer):
         return self.func(self.player.current_state())
 
 class ObjectSensitivePlayer(ProxyPlayer):
-    def __init__(self, player, templateMatcher, method):
+    def __init__(self, player, templateMatcher, method, func):
         super(ObjectSensitivePlayer, self).__init__(player)
         self.templateMatcher = templateMatcher
         self.method = method
+        self.func = func
 
     def current_state(self):
         img = self.player.original_current_state()
         obj_areas = self.templateMatcher.match_all_objects(img)
-        new_img = self.templateMatcher.process_image(img, obj_areas, self.method)
-        #for i in xrange(new_img.shape[2]):
-        #    import matplotlib.pyplot as plt
-        #    plt.imshow(new_img[:,:,i])
-        #    plt.show()
-        return new_img
+        obj_images = self.templateMatcher.process_image(img, obj_areas, self.method)
+        obj_images = self.func(obj_images)
+        state = self.player.current_state()
+        new_state = np.concatenate((state, obj_images), axis=2)
+        return new_state
 
 def show_images(img):
     import matplotlib.pyplot as plt
