@@ -93,10 +93,15 @@ class ObjectSensitivePlayer(ProxyPlayer):
         img = self.player.original_current_state()
         obj_areas = self.templateMatcher.match_all_objects(img)
         obj_images = self.templateMatcher.process_image(img, obj_areas, self.method)
-        obj_images = self.func(obj_images)
-        state = self.player.current_state()
-        new_state = np.concatenate((state, obj_images), axis=2)
-        return new_state
+        if self.method == 'add_input_separate':
+            obj_images = self.func(obj_images)
+            state = self.player.current_state()
+            new_state = np.concatenate((state, obj_images), axis=2)
+            return new_state
+        elif self.method == 'swap_input_separate':
+            obj_images = self.func(obj_images)
+            return obj_images
+
 
 def show_images(img):
     import matplotlib.pyplot as plt
