@@ -99,18 +99,16 @@ def get_player(viz=False, train=False, dumpdir=None):
 
     if OBJECT_METHOD == 'swap_input_separate':
         # For the final image, only use the object layers
-        # num_obj
         # Interesting thing: No wall information here
         # TODO: If we need to add walls
         # History = 4, objects = 80*80*6
-        IMAGE_SHAPE3 = IMAGE_SIZE + (6,)
-        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD)
-        FRAME_HISTORY = 4
-        pl = MapPlayerState(pl, resize)
-        #if not train:
-        #  pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+        global FRAME_HISTORY
+        FRAME_HISTORY = 1
+        global IMAGE_SHAPE3
+        IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * len(TEMPLATE_MATCHER.index2obj),)
+        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
+        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
-        # exit()
     pl = LimitLengthPlayer(pl, 40000)
     #show_images(pl.current_state())
     #exit()
