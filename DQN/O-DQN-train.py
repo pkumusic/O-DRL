@@ -52,10 +52,10 @@ INIT_EXPLORATION = 1
 EXPLORATION_EPOCH_ANNEAL = 0.01
 END_EXPLORATION = 0.1
 
-MEMORY_SIZE = 2.5e5#1e6
+MEMORY_SIZE = 1e6
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
-INIT_MEMORY_SIZE = 1.25e4#5e4
+INIT_MEMORY_SIZE = 5e4
 STEP_PER_EPOCH = 5000
 EVAL_EPISODE = 50
 
@@ -80,7 +80,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         return img
     if OBJECT_METHOD == 'swap_input_combine':
         # swap the input with combined object image
-        FRAME_HISTORY = 4
+        FRAME_HISTORY = 1
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY,)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
@@ -88,18 +88,18 @@ def get_player(viz=False, train=False, dumpdir=None):
 
     if OBJECT_METHOD == 'add_input_combine':
         # add the input with combined object image for each history
-        FRAME_HISTORY = 4
+        FRAME_HISTORY = 1
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * 2,)
         pl = MapPlayerState(pl, grey)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
-        pl = HistoryFramePlayer(pl, 4)
+        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
 
     if OBJECT_METHOD == 'add_input_separate':
         # For the current state, add the object images
         # (his1, his2, his3, cur, obj1_cur, obj2_cur...)
         # For each image, use the grey scale image, and resize it to 84 * 84
-        FRAME_HISTORY = 4
+        FRAME_HISTORY = 1
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY + len(TEMPLATE_MATCHER.index2obj),)
         pl = MapPlayerState(pl, grey)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
@@ -244,7 +244,7 @@ def get_config():
             exploration_epoch_anneal=EXPLORATION_EPOCH_ANNEAL,
             update_frequency=4,
             #reward_clip=(-1, 1),
-            history_len=1)#FRAME_HISTORY)
+            history_len=FRAME_HISTORY)
 
     lr = tf.Variable(0.001, trainable=False, name='learning_rate')
     tf.scalar_summary('learning_rate', lr)
