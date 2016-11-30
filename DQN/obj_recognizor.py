@@ -147,46 +147,18 @@ class TemplateMatcher(object):
 
 
     def process_image(self, image, obj_areas, method='swap_input_combine', debug=False):
-        if method == 'swap_input_combine':
-
-            plt.imshow(image)
-            plt.show()
+        if method.split('_')[2] == 'combine':
             image = np.zeros((image.shape[:2]))
             for obj, areas in obj_areas.iteritems():
                 for area in areas:
-                    image[area[0]:area[1]+1,area[2]:area[3]+1] = obj
-            plt.imshow(image, cmap=pylab.gray())
-            plt.show()
-            exit()
+                    image[area[2]:area[3]+1,area[0]:area[1]+1] = self.obj2index[obj]+1
             return image
-        if method == 'add_input_separate':
-            if debug:
-                subplot_index = 1
-                plt.subplot(3,3,subplot_index)
-                subplot_index += 1
-                plt.imshow(image)
-                plt.subplot(3, 3, subplot_index)
+        if method.split('_')[2] == 'separate':
             obj_images = np.zeros((image.shape[0], image.shape[1], len(self.obj2index)))
             for obj, areas in obj_areas.iteritems():
-                #print obj, areas
                 obj_index = self.obj2index[obj]
                 for area in areas:
                     obj_images[area[2]:area[3]+1, area[0]:area[1]+1, obj_index] = 1
-            if debug:
-                for i in xrange(len(self.obj2index)):
-                    plt.subplot(3, 3, subplot_index)
-                    subplot_index += 1
-                    plt.title(self.index2obj[i])
-                    plt.imshow(obj_images[:,:,i])
-                plt.show()
-            return obj_images
-        if method == 'swap_input_separate':
-            obj_images = np.zeros((image.shape[0], image.shape[1], len(self.obj2index)))
-            for obj, areas in obj_areas.iteritems():
-                # print obj, areas
-                obj_index = self.obj2index[obj]
-                for area in areas:
-                    obj_images[area[2]:area[3] + 1, area[0]:area[1] + 1, obj_index] = 1
             return obj_images
 
 

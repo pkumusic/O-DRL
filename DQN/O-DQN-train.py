@@ -74,17 +74,17 @@ def get_player(viz=False, train=False, dumpdir=None):
     def resize(img):
         return cv2.resize(img, IMAGE_SIZE)
     if OBJECT_METHOD == 'swap_input_combine':
-        def swap_image(img):
-            obj_areas = TEMPLATE_MATCHER.fake_match_all_objects(img)
-            return TemplateMatcher.process_image(img, obj_areas)
-        pl = MapPlayerState(pl, swap_image)
+        FRAME_HISTORY = 4
+        IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY,)
+        pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
+        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+        # show_images(pl.current_state())
+
     if OBJECT_METHOD == 'add_input_separate':
         # For the final image, add the object layers of the image to the channels
         # For each image, use the grey scale image, and resize it to 84 * 84
         # The number of channels become 4 + num_obj
-        global FRAME_HISTORY
         FRAME_HISTORY = 4
-        global IMAGE_SHAPE3
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY + len(TEMPLATE_MATCHER.index2obj),)
 
         def grey(img):
@@ -102,9 +102,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         # Interesting thing: No wall information here
         # TODO: If we need to add walls
         # History = 4, objects = 80*80*6
-        global FRAME_HISTORY
         FRAME_HISTORY = 1
-        global IMAGE_SHAPE3
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * len(TEMPLATE_MATCHER.index2obj),)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)

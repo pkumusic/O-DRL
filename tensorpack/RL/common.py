@@ -101,6 +101,10 @@ class ObjectSensitivePlayer(ProxyPlayer):
         elif self.method == 'swap_input_separate':
             obj_images = self.func(obj_images)
             return obj_images
+        elif self.method == 'swap_input_combine':
+            obj_images = obj_images[:,:,np.newaxis]
+            obj_images /= float(len(self.templateMatcher.index2obj))
+            return obj_images
 
 
 def show_images(img):
