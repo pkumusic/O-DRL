@@ -93,7 +93,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         pl = MapPlayerState(pl, grey)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, 4)
-        show_images(pl.current_state())
+        #show_images(pl.current_state())
 
     if OBJECT_METHOD == 'add_input_separate':
         # For the current state, add the object images
