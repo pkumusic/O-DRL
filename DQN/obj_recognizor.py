@@ -71,7 +71,7 @@ class TemplateMatcher(object):
         object_locs = []
         img_rgb = image
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-        template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+        #template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
         w, h = template.shape[::-1]
 
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
@@ -102,6 +102,7 @@ class TemplateMatcher(object):
         objects = defaultdict(dict)
         for filename in glob.glob(templates_path+'/*'):
             template = cv2.imread(filename)
+            template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
             object = os.path.basename(filename).split('.')[0]
             infos = object.split('_')
             if len(infos) == 1:
