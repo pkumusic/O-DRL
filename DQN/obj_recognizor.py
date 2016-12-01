@@ -78,6 +78,7 @@ class TemplateMatcher(object):
         w, h = template.shape[::-1]
 
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+        self.lock.release()
         loc = np.where(res >= threshold)
 
         for pt in zip(*loc[::-1]):
@@ -87,7 +88,6 @@ class TemplateMatcher(object):
         if show:
             plt.imshow(img_rgb)
             plt.show()
-        self.lock.release()
         return object_locs
 
 
