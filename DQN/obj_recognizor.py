@@ -27,6 +27,7 @@ import pylab
 import matplotlib.pyplot as plt
 from PIL import Image
 from collections import defaultdict
+import threading
 THRESHOLDS_FILE = 'thresholds.pkl'
 TEMPLATES_DIR  = 'templates'
 
@@ -35,6 +36,7 @@ class TemplateMatcher(object):
         self.template_dir = template_dir
         self.obj2index, self.index2obj, self.templates = self.read_objects() # Use int index as keys.
         self.thresholds = self.read_thresholds()
+        self.lock = threading.Lock()
 
     def match_all_objects(self, image):
         """ This is the API to extract objects for an image.
@@ -72,7 +74,9 @@ class TemplateMatcher(object):
         img_rgb = image
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         #template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+        self.lock.acquire()
         print template.shape
+        self.lock.release()
         w, h = template.shape[::-1]
 
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
