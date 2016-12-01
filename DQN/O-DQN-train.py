@@ -80,7 +80,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         return img
     if OBJECT_METHOD == 'swap_input_combine':
         # swap the input with combined object image
-        FRAME_HISTORY = 1
+        FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY,)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
@@ -88,7 +88,7 @@ def get_player(viz=False, train=False, dumpdir=None):
 
     if OBJECT_METHOD == 'add_input_combine':
         # add the input with combined object image for each history
-        FRAME_HISTORY = 1
+        FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * 2,)
         pl = MapPlayerState(pl, grey)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
@@ -99,7 +99,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         # For the current state, add the object images
         # (his1, his2, his3, cur, obj1_cur, obj2_cur...)
         # For each image, use the grey scale image, and resize it to 84 * 84
-        FRAME_HISTORY = 1
+        FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY + len(TEMPLATE_MATCHER.index2obj),)
         pl = MapPlayerState(pl, grey)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
@@ -244,7 +244,7 @@ def get_config():
             exploration_epoch_anneal=EXPLORATION_EPOCH_ANNEAL,
             update_frequency=4,
             #reward_clip=(-1, 1),
-            history_len=FRAME_HISTORY)
+            history_len=1)
 
     lr = tf.Variable(0.001, trainable=False, name='learning_rate')
     tf.scalar_summary('learning_rate', lr)
