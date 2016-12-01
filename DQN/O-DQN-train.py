@@ -57,7 +57,7 @@ MEMORY_SIZE = 1e6
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e2
 STEP_PER_EPOCH = 5000
-EVAL_EPISODE = 50
+EVAL_EPISODE = 15
 
 NUM_ACTIONS = None
 DOUBLE = None

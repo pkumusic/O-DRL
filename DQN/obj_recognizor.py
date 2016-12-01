@@ -76,7 +76,6 @@ class TemplateMatcher(object):
         #template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
         self.lock.acquire()
         w, h = template.shape[::-1]
-
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
         self.lock.release()
         loc = np.where(res >= threshold)
