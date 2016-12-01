@@ -87,7 +87,7 @@ class TemplateMatcher(object):
         if show:
             plt.imshow(img_rgb)
             plt.show()
-            self.lock.release()
+        self.lock.release()
         return object_locs
 
 
