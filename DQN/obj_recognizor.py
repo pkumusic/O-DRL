@@ -45,9 +45,11 @@ class TemplateMatcher(object):
         :param image: default as colored image. Height * Width * 3 numpy array
         :return: obj_areas. {obj: [(left,right,top,bottom), ..., ]}
         """
+        self.lock.acquire()
         obj_areas = {}
         for obj in self.obj2index.keys():
             obj_areas[obj] = self.match_object(image, obj)
+        self.lock.release()
         return obj_areas
 
     def match_object(self, image, obj):
@@ -70,14 +72,14 @@ class TemplateMatcher(object):
         :param threshold:
         :return: [(left,right,top,bottom), (...)]
         """
+        self.lock.acquire()
         object_locs = []
         img_rgb = image
         img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
         #template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-        self.lock.acquire()
         w, h = template.shape[::-1]
         res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-        self.lock.release()
+
         loc = np.where(res >= threshold)
 
         for pt in zip(*loc[::-1]):
@@ -87,6 +89,7 @@ class TemplateMatcher(object):
         if show:
             plt.imshow(img_rgb)
             plt.show()
+        self.lock.release()
         return object_locs
 
 
