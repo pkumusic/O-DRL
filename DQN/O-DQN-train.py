@@ -253,7 +253,7 @@ def get_config():
         dataset=dataset_train,
         optimizer=tf.train.AdamOptimizer(lr, epsilon=1e-3),
         callbacks=Callbacks([
-            StatPrinter(), ModelSaver(),
+            StatPrinter(), PeriodicCallback(ModelSaver(), 10),
             ScheduledHyperParamSetter('learning_rate',
                 [(150, 4e-4), (250, 1e-4), (350, 5e-5)]),
             RunOp(lambda: M.update_target_param()),
