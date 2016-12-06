@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # DL Project for 10807
-# Author: Music, Tian, Jing, Yuxin
+# Author: Music, Tian, Jing
 
 # Analyze the model results
 
