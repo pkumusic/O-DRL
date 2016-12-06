@@ -139,7 +139,7 @@ class TemplateMatcher(object):
         # pkl_file.close()
         # return thresholds
 
-    def draw_extracted_image(self, image, extracted_objects):
+    def draw_extracted_image(self, image, extracted_objects, filePath=None):
         for object, locs in extracted_objects.iteritems():
             for loc in locs:
                 cv2.rectangle(image, (loc[0],loc[2]), (loc[1], loc[3]), (0, 0, 255), 1)
@@ -147,6 +147,8 @@ class TemplateMatcher(object):
 
         plt.imshow(image)
         plt.show()
+        if filePath:
+            cv2.imwrite(filePath, image)
 
 
     def process_image(self, image, obj_areas, method='swap_input_combine', debug=False):
@@ -179,8 +181,15 @@ if __name__ == '__main__':
     for i in xrange(100, 200):
         i = np.random.randint(1, 1229)
         image = np.load('../obj/MsPacman-v0-sample/%s.npy'%i)
+        #cv2.imwrite('sample%s.png'%i,image)
+        plt.imshow(image)
+        plt.show()
         extracted_objects = tm.match_all_objects(image)
-        tm.draw_extracted_image(image, extracted_objects)
+        image=tm.process_image(image, extracted_objects, method='swap_input_separate')
+        for j in xrange(image.shape[2]):
+            plt.imshow(image[:, :, j])
+            plt.show()
+        #tm.draw_extracted_image(image, extracted_objects)#, filePath='sample_extracted%s.png'%i)
 
 
 
