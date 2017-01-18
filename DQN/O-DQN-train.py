@@ -114,7 +114,9 @@ def get_player(viz=False, train=False, dumpdir=None):
         FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * len(TEMPLATE_MATCHER.index2obj),)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
-        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+
+        if not train:
+            pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
 
     pl = LimitLengthPlayer(pl, 40000)
@@ -244,7 +246,7 @@ def get_config():
             exploration_epoch_anneal=EXPLORATION_EPOCH_ANNEAL,
             update_frequency=4,
             #reward_clip=(-1, 1),
-            history_len=1)
+            history_len=FRAME_HISTORY)
 
     lr = tf.Variable(0.001, trainable=False, name='learning_rate')
     tf.scalar_summary('learning_rate', lr)
@@ -258,7 +260,7 @@ def get_config():
                 [(100, 4e-4), (500, 1e-4), (1000, 5e-5)]),
             RunOp(lambda: M.update_target_param()),
             dataset_train,
-            #PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 5),
+            PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 5),
             #HumanHyperParamSetter('learning_rate', 'hyper.txt'),
             #HumanHyperParamSetter(ObjAttrParam(dataset_train, 'exploration'), 'hyper.txt'),
         ]),
