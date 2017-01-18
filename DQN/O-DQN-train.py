@@ -28,7 +28,7 @@ from tensorpack.models.conv2d import Conv2D
 from tensorpack.models.pool import MaxPooling
 from tensorpack.models.nonlin import LeakyReLU, PReLU
 from tensorpack.models.fc import FullyConnected
-import tensorpack.tfutils.summplot_imagesary as summary
+import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
