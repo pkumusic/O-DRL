@@ -78,7 +78,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         img = resize(img)
         img = img[:, :, np.newaxis] / 255.0
         return img
-    if OBJECT_METHOD == 'swap_input_combine':
+    if OBJECT_METHOD == 'swap_input_combine': #1
         # swap the input with combined object image
         FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY,)
@@ -86,7 +86,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
 
-    if OBJECT_METHOD == 'add_input_combine':
+    if OBJECT_METHOD == 'add_input_combine': #2
         # add the input with combined object image for each history
         FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * 2,)
@@ -95,7 +95,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         #show_images(pl.current_state())
 
-    if OBJECT_METHOD == 'add_input_separate':
+    if OBJECT_METHOD == 'add_input_separate': #3
         # For the current state, add the object images
         # (his1, his2, his3, cur, obj1_cur, obj2_cur...)
         # For each image, use the grey scale image, and resize it to 84 * 84
@@ -106,7 +106,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         #show_images(pl.current_state())
 
-    if OBJECT_METHOD == 'swap_input_separate':
+    if OBJECT_METHOD == 'swap_input_separate': #4
         # swap the input images with object images
         # (obj1_his1, obj2_his1, obj1_his2, obj2_his2, ... )
         # TODO: If we need to add walls
