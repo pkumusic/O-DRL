@@ -201,7 +201,7 @@ def get_config():
             end_exploration=END_EXPLORATION,
             exploration_epoch_anneal=EXPLORATION_EPOCH_ANNEAL,
             update_frequency=4,
-            reward_clip=(-1, 1),
+            #reward_clip=(-1, 1),
             history_len=FRAME_HISTORY)
 
     lr = tf.Variable(0.001, trainable=False, name='learning_rate')

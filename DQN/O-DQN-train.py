@@ -56,7 +56,7 @@ MEMORY_SIZE = 2e4
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e2
-STEP_PER_EPOCH = 5000
+STEP_PER_EPOCH = 10000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
@@ -253,12 +253,12 @@ def get_config():
         dataset=dataset_train,
         optimizer=tf.train.AdamOptimizer(lr, epsilon=1e-3),
         callbacks=Callbacks([
-            StatPrinter(), PeriodicCallback(ModelSaver(), 10),
+            StatPrinter(), PeriodicCallback(ModelSaver(), 5),
             ScheduledHyperParamSetter('learning_rate',
-                [(150, 4e-4), (250, 1e-4), (350, 5e-5)]),
+                [(100, 4e-4), (500, 1e-4), (1000, 5e-5)]),
             RunOp(lambda: M.update_target_param()),
             dataset_train,
-            #PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 3),
+            #PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 5),
             #HumanHyperParamSetter('learning_rate', 'hyper.txt'),
             #HumanHyperParamSetter(ObjAttrParam(dataset_train, 'exploration'), 'hyper.txt'),
         ]),
