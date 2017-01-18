@@ -118,7 +118,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         if not train:
             pl = HistoryFramePlayer(pl, FRAME_HISTORY)
             pl = PreventStuckPlayer(pl, 30, 1)
-        show_images(pl.current_state())
+        #show_images(pl.current_state())
 
     pl = LimitLengthPlayer(pl, 40000)
     #show_images(pl.current_state())
