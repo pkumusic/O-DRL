@@ -57,7 +57,7 @@ MEMORY_SIZE = 2e4
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e2
 STEP_PER_EPOCH = 5000
-EVAL_EPISODE = 15
+EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
 DOUBLE = None
@@ -111,7 +111,7 @@ def get_player(viz=False, train=False, dumpdir=None):
         # (obj1_his1, obj2_his1, obj1_his2, obj2_his2, ... )
         # TODO: If we need to add walls
         # Interesting thing is we don't have any wall info here
-        FRAME_HISTORY = 1
+        FRAME_HISTORY = 4
         IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * len(TEMPLATE_MATCHER.index2obj),)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         pl = HistoryFramePlayer(pl, FRAME_HISTORY)

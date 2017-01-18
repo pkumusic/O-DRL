@@ -35,13 +35,14 @@ from tensorpack.callbacks.base import PeriodicCallback
 
 import common
 from common import play_model, Evaluator, eval_model_multithread
+import numpy as np
 
 BATCH_SIZE = 64
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
 ACTION_REPEAT = 4
 
-CHANNEL = FRAME_HISTORY * 3
+CHANNEL = FRAME_HISTORY #* 3
 IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
 GAMMA = 0.99
 
@@ -49,11 +50,11 @@ INIT_EXPLORATION = 1
 EXPLORATION_EPOCH_ANNEAL = 0.01
 END_EXPLORATION = 0.1
 
-MEMORY_SIZE = 1e6
+MEMORY_SIZE = 2e4 #1e6
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
-INIT_MEMORY_SIZE = 5e4
-STEP_PER_EPOCH = 5000
+INIT_MEMORY_SIZE = 5e2
+STEP_PER_EPOCH = 10000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
@@ -62,11 +63,15 @@ DUELING = None
 
 def get_player(viz=False, train=False, dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir)
-    def func(img):
+    def resize(img):
         return cv2.resize(img, IMAGE_SIZE)
-    pl = MapPlayerState(pl, func)
+    def grey(img):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = resize(img)
+        img = img[:, :, np.newaxis] / 255.0
+        return img
+    pl = MapPlayerState(pl, grey)
     #show_images(pl.current_state())
-
 
     global NUM_ACTIONS
     NUM_ACTIONS = pl.get_action_space().num_actions()
@@ -90,7 +95,7 @@ class Model(ModelDesc):
 
     def _get_DQN_prediction(self, image):
         """ image: [0,255]"""
-        image = image / 255.0
+        #image = image / 255.0
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
@@ -206,12 +211,12 @@ def get_config():
         dataset=dataset_train,
         optimizer=tf.train.AdamOptimizer(lr, epsilon=1e-3),
         callbacks=Callbacks([
-            StatPrinter(), ModelSaver(),
+            StatPrinter(), PeriodicCallback(ModelSaver(), 5),
             ScheduledHyperParamSetter('learning_rate',
-                [(150, 4e-4), (250, 1e-4), (350, 5e-5)]),
+                [(100, 4e-4), (500, 1e-4), (1000, 5e-5)]),
             RunOp(lambda: M.update_target_param()),
             dataset_train,
-            PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 3),
+            PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 5),
             #HumanHyperParamSetter('learning_rate', 'hyper.txt'),
             #HumanHyperParamSetter(ObjAttrParam(dataset_train, 'exploration'), 'hyper.txt'),
         ]),
