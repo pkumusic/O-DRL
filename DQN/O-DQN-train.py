@@ -233,7 +233,8 @@ class Model(ModelDesc):
 
 def get_config():
     #logger.auto_set_dir()
-    logger.set_logger_dir(os.path.join('train_log', LOG_DIR))
+    #logger.set_logger_dir(os.path.join('train_log', LOG_DIR))
+    logger.set_logger_dir(LOG_DIR)
     M = Model()
 
     dataset_train = ExpReplay(
