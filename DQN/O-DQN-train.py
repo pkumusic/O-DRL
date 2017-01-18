@@ -97,14 +97,17 @@ def get_player(viz=False, train=False, dumpdir=None):
 
     if OBJECT_METHOD == 'add_input_separate': #3
         # For the current state, add the object images
-        # (his1, his2, his3, cur, obj1_cur, obj2_cur...)
+        # (obj1_his1, obj2_his1, cur_his1, obj1_his2, ... )
         # For each image, use the grey scale image, and resize it to 84 * 84
         FRAME_HISTORY = 4
-        IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY + len(TEMPLATE_MATCHER.index2obj),)
+        IMAGE_SHAPE3 = IMAGE_SIZE + (FRAME_HISTORY * (len(TEMPLATE_MATCHER.index2obj)+1),)
         pl = MapPlayerState(pl, grey)
-        pl = HistoryFramePlayer(pl, FRAME_HISTORY)
         pl = ObjectSensitivePlayer(pl, TEMPLATE_MATCHER, OBJECT_METHOD, resize)
         #show_images(pl.current_state())
+        if not train:
+            pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+            pl = PreventStuckPlayer(pl, 30, 1)
+
 
     if OBJECT_METHOD == 'swap_input_separate': #4
         # swap the input images with object images
