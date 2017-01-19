@@ -57,7 +57,7 @@ MEMORY_SIZE = 2e4
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e2
 STEP_PER_EPOCH = 10#000
-EVAL_EPISODE = 1
+#EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
 DOUBLE = None
@@ -261,7 +261,7 @@ def get_config():
                 [(100, 4e-4), (500, 1e-4), (1000, 5e-5)]),
             RunOp(lambda: M.update_target_param()),
             dataset_train,
-            PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 5),
+            #PeriodicCallback(Evaluator(EVAL_EPISODE, ['state'], ['Qvalue']), 5), #mutli-thread problem.
             #HumanHyperParamSetter('learning_rate', 'hyper.txt'),
             #HumanHyperParamSetter(ObjAttrParam(dataset_train, 'exploration'), 'hyper.txt'),
         ]),
