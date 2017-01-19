@@ -56,7 +56,7 @@ MEMORY_SIZE = 2e4
 # NOTE: will consume at least 1e6 * 84 * 84 bytes == 6.6G memory.
 # Suggest using tcmalloc to manage memory space better.
 INIT_MEMORY_SIZE = 5e2
-STEP_PER_EPOCH = 10000
+STEP_PER_EPOCH = 10#000
 EVAL_EPISODE = 50
 
 NUM_ACTIONS = None
