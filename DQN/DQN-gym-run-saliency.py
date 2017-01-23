@@ -19,7 +19,7 @@ from tensorpack.tfutils.summary import add_moving_summary, add_param_summary
 from tensorpack.RL.expreplay import ExpReplay
 from tensorpack.tfutils.sessinit import SaverRestore
 from tensorpack.train.queue import QueueInputTrainer
-from tensorpack.RL.common import MapPlayerState
+from tensorpack.RL.common import MapPlayerState, show_images
 from tensorpack.RL.gymenv import GymEnv
 from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
 from tensorpack.RL.history import HistoryFramePlayer
@@ -32,11 +32,13 @@ import tensorpack.tfutils.summary as summary
 from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
+from tensorpack.predict.base import OfflinePredictor
 import gym
+import numpy as np
 
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
-CHANNEL = FRAME_HISTORY * 3
+CHANNEL = FRAME_HISTORY# * 3
 IMAGE_SHAPE3 = IMAGE_SIZE + (CHANNEL,)
 
 NUM_ACTIONS = None
@@ -48,24 +50,33 @@ from common import play_one_episode, get_predict_func
 
 def get_player(dumpdir=None):
     pl = GymEnv(ENV_NAME, dumpdir=dumpdir, auto_restart=False)
-    pl = MapPlayerState(pl, lambda img: cv2.resize(img, IMAGE_SIZE[::-1]))
+    def resize(img):
+        return cv2.resize(img, IMAGE_SIZE)
+    def grey(img):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = resize(img)
+        img = img[:, :, np.newaxis] / 255.0
+        return img
+    pl = MapPlayerState(pl, grey)
+
 
     global NUM_ACTIONS
     NUM_ACTIONS = pl.get_action_space().num_actions()
 
     pl = HistoryFramePlayer(pl, FRAME_HISTORY)
+    #show_images(pl.current_state())
     return pl
 
 class Model(ModelDesc):
     def _get_input_vars(self):
         assert NUM_ACTIONS is not None
-        return [InputVar(tf.float32, (None,) + IMAGE_SHAPE3, 'state'),
-                InputVar(tf.int32, (None,), 'action'),
-                InputVar(tf.float32, (None,), 'futurereward') ]
+        return [InputVar(tf.float32, (None,) + IMAGE_SHAPE3, 'state')]#,
+                #InputVar(tf.int32, (None,), 'action'),
+                #InputVar(tf.float32, (None,), 'futurereward') ]
 
     def _get_DQN_prediction(self, image):
         """ image: [0,255]"""
-        image = image / 255.0
+        #image = image / 255.0
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)
@@ -90,9 +101,44 @@ class Model(ModelDesc):
         return tf.identity(Q, name='Qvalue')
 
     def _build_graph(self, inputs):
-        state, action, futurereward = inputs
+        state = inputs[0]
+        #state, action, futurereward = inputs
         self.Qvalue = self._get_DQN_prediction(state)
+        max_Qvalue = tf.reduce_max(self.Qvalue, 1)
+        saliency = tf.gradients(max_Qvalue, state)[0]
+        self.saliency = tf.identity(saliency, name='saliency')
 
+
+def run(cfg, s_cfg, output):
+    player = get_player(dumpdir=output)
+    predfunc = OfflinePredictor(cfg)
+    s_func   = OfflinePredictor(s_cfg)
+    timestep = 0
+    while True:
+        timestep += 1
+        s = player.current_state()
+        act = predfunc([[s]])[0][0].argmax()
+        saliency = s_func([[s]])[0][0]
+        r, isOver = player.action(act)
+        show(s, saliency, timestep, output, last=True, save=True)
+        print r, act
+        if isOver:
+            return
+
+def show(s, saliency, timestep, output, last=False, save=False):
+    import matplotlib.pyplot as plt
+    for i in xrange(s.shape[2]):
+        if last:
+            if i != s.shape[2] - 1:
+                continue
+        plt.subplot(211)
+        plt.imshow(s[:, :, i], cmap='gray')
+        plt.subplot(212)
+        plt.imshow(saliency[:,:,i], cmap='gray')
+        if save:
+            plt.savefig(output + "/file%02d.png" % timestep)
+        else:
+            plt.show()
 
 def run_submission(cfg, output, nr):
     player = get_player(dumpdir=output)
@@ -151,5 +197,13 @@ if __name__ == '__main__':
             session_init=SaverRestore(args.load),
             input_var_names=['state'],
             output_var_names=['Qvalue'])
-    run_submission(cfg, args.output, args.episode)
-    do_submit(args.output, args.api)
+
+    s_cfg = PredictConfig(
+            model=Model(),
+            session_init=SaverRestore(args.load),
+            input_var_names=['state'],
+            output_var_names=['saliency'])
+
+    run(cfg, s_cfg, args.output)
+    #run_submission(cfg, args.output, args.episode)
+    #do_submit(args.output, args.api)
