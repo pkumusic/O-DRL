@@ -120,12 +120,14 @@ def run(cfg, s_cfg, output):
         act = predfunc([[s]])[0][0].argmax()
         saliency = s_func([[s]])[0][0]
         r, isOver = player.action(act)
-        show(s, saliency, timestep, output, last=True, save=True)
-        print r, act
+        show(s, saliency, act, timestep, output, last=True, save=True)
+        #print r, act
+        if timestep % 50 == 0:
+            print timestep
         if isOver:
             return
 
-def show(s, saliency, timestep, output, last=False, save=False):
+def show(s, saliency, act, timestep, output, last=False, save=False):
     import matplotlib.pyplot as plt
     for i in xrange(s.shape[2]):
         if last:
@@ -134,6 +136,7 @@ def show(s, saliency, timestep, output, last=False, save=False):
         plt.subplot(211)
         plt.imshow(s[:, :, i], cmap='gray')
         plt.subplot(212)
+        plt.title(act)
         plt.imshow(saliency[:,:,i], cmap='gray')
         if save:
             plt.savefig(output + "/file%02d.png" % timestep)
