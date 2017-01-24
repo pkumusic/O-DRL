@@ -134,10 +134,10 @@ def show(s, saliency, act, timestep, output, last=False, save=False):
             if i != s.shape[2] - 1:
                 continue
         plt.subplot(211)
-        plt.imshow(s[:, :, i], cmap='gray')
+        plt.imshow(s[:, :, i], cmap='gray', aspect='equal')
         plt.subplot(212)
         plt.title(act)
-        plt.imshow(saliency[:,:,i], cmap='gray')
+        plt.imshow(saliency[:,:,i], cmap='gray', aspect='equal')
         if save:
             plt.savefig(output + "/file%02d.png" % timestep)
         else:
