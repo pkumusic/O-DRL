@@ -134,12 +134,18 @@ def show(s, saliency, act, timestep, output, last=False, save=False):
             if i != s.shape[2] - 1:
                 continue
         plt.subplot(211)
-        plt.imshow(s[:, :, i], cmap='gray', aspect='equal')
+        plt.axis('off')
+        fig = plt.imshow(s[:, :, i], cmap='gray', aspect='equal', interpolation='nearest')
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
         plt.subplot(212)
-        plt.title(act)
-        plt.imshow(saliency[:,:,i], cmap='gray', aspect='equal')
+        plt.title('action:' + str(act))
+        plt.axis('off')
+        fig = plt.imshow(saliency[:,:,i], cmap='gray', aspect='equal', interpolation='nearest')
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
         if save:
-            plt.savefig(output + "/file%02d.png" % timestep)
+            plt.savefig(output + "/file%04d.png" % timestep, bbox_inches='tight', pad_inches = 0)
         else:
             plt.show()
 
