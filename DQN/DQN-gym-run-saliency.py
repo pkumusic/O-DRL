@@ -122,20 +122,23 @@ def run(cfg, s_cfg, output):
         saliency = s_func([[s]])[0][0]
         r, isOver = player.action(act)
         #show(s, saliency, act, timestep, output, last=True, save=True)
-        show_large(s0, saliency, act, timestep, output, save=True)
+        show_large(s0, saliency, act, timestep, output, save=True, save_npy=True)
         #print r, act
         if timestep % 50 == 0:
             print timestep
         if isOver:
             return
 
-def show_large(s, saliency, act, timestep, output, save=False):
+def show_large(s, saliency, act, timestep, output, save=False, save_npy=False):
     # Show the pictures of original resolution of the game play
     # Convert the 84*84 saliency maps to 160 * 210 resolution
     import matplotlib.pyplot as plt
-    s = s
+    # Get the saliency map for the last frame in the history (The current frame)
     saliency = saliency[:,:,3]
     saliency = cv2.resize(saliency, (160,210))
+    if save_npy:
+        np.save(output+"/state%d"%timestep, s)
+        np.save(output+"/saliency%d"%timestep, saliency)
     #print saliency.shape
     #print s.shape
     #exit()
