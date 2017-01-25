@@ -117,15 +117,43 @@ def run(cfg, s_cfg, output):
     while True:
         timestep += 1
         s = player.current_state()
+        s0 = player.original_current_state()
         act = predfunc([[s]])[0][0].argmax()
         saliency = s_func([[s]])[0][0]
         r, isOver = player.action(act)
-        show(s, saliency, act, timestep, output, last=True, save=True)
+        #show(s, saliency, act, timestep, output, last=True, save=True)
+        show_large(s0, saliency, act, timestep, output, save=True)
         #print r, act
         if timestep % 50 == 0:
             print timestep
         if isOver:
             return
+
+def show_large(s, saliency, act, timestep, output, save=False):
+    # Show the pictures of original resolution of the game play
+    # Convert the 84*84 saliency maps to 160 * 210 resolution
+    import matplotlib.pyplot as plt
+    s = s
+    saliency = saliency[:,:,3]
+    saliency = cv2.resize(saliency, (160,210))
+    #print saliency.shape
+    #print s.shape
+    #exit()
+    plt.subplot(211)
+    plt.axis('off')
+    fig = plt.imshow(s, aspect='equal')
+    fig.axes.get_xaxis().set_visible(False)
+    fig.axes.get_yaxis().set_visible(False)
+    plt.subplot(212)
+    plt.title('action:' + str(act))
+    plt.axis('off')
+    fig = plt.imshow(saliency, aspect='equal')
+    fig.axes.get_xaxis().set_visible(False)
+    fig.axes.get_yaxis().set_visible(False)
+    if save:
+        plt.savefig(output + "/file%04d.png" % timestep, bbox_inches='tight', pad_inches = 0)
+    else:
+        plt.show()
 
 def show(s, saliency, act, timestep, output, last=False, save=False):
     import matplotlib.pyplot as plt
