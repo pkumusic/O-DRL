@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# DL Project for 10807
 # Author: Music
 
 from tensorpack.tfutils import symbolic_functions as symbf

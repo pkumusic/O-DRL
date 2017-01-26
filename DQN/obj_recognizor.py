@@ -28,6 +28,9 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from collections import defaultdict
 import threading
+from collections import namedtuple
+Position = namedtuple('Position',
+                        ['left', 'right', 'up', 'down'])
 THRESHOLDS_FILE = 'thresholds.pkl'
 TEMPLATES_DIR  = 'templates'
 
@@ -41,7 +44,7 @@ class TemplateMatcher(object):
     def match_all_objects(self, image):
         """ This is the API to extract objects for an image.
             Given an image, return the extracted objects in the image as
-            {obj: [(left,right,top,bottom), ..., ]}
+            {obj: [Position(left,right,top,bottom), ..., ]}
         :param image: default as colored image. Height * Width * 3 numpy array
         :return: obj_areas. {obj: [(left,right,top,bottom), ..., ]}
         """
@@ -80,7 +83,7 @@ class TemplateMatcher(object):
         loc = np.where(res >= threshold)
 
         for pt in zip(*loc[::-1]):
-            object_locs.append((pt[0], pt[0]+w, pt[1], pt[1] + h))
+            object_locs.append(Position(pt[0], pt[0]+w, pt[1], pt[1] + h))
             if show:
                 cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
         if show:
@@ -142,8 +145,8 @@ class TemplateMatcher(object):
     def draw_extracted_image(self, image, extracted_objects, filePath=None):
         for object, locs in extracted_objects.iteritems():
             for loc in locs:
-                cv2.rectangle(image, (loc[0],loc[2]), (loc[1], loc[3]), (0, 0, 255), 1)
-                cv2.putText(image, object, (loc[0]-2, loc[2]), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
+                cv2.rectangle(image, (loc.left,loc.up), (loc.right, loc.down), (0, 0, 255), 1)
+                cv2.putText(image, object, (loc.left-2, loc.up), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
 
         plt.imshow(image)
         plt.show()
