@@ -32,6 +32,7 @@ from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
 from tensorpack.callbacks.graph import RunOp
 from tensorpack.callbacks.base import PeriodicCallback
 from tensorpack.predict.base import OfflinePredictor
+from saliency_analysis import Saliency_Analyzor
 import gym
 import numpy as np
 
@@ -113,6 +114,7 @@ def run(cfg, s_cfg, output):
     predfunc = OfflinePredictor(cfg)
     s_func   = OfflinePredictor(s_cfg)
     timestep = 0
+    sa = Saliency_Analyzor('../obj/MsPacman-v0')
     while True:
         timestep += 1
         s = player.current_state()
@@ -121,16 +123,16 @@ def run(cfg, s_cfg, output):
         saliency = s_func([[s]])[0][0]
         r, isOver = player.action(act)
         #show(s, saliency, act, timestep, output, last=True, save=True)
-        show_large(s0, saliency, act, timestep, output, save=True, save_npy=True)
+        show_large(s0, saliency, act, timestep, output, save=True, save_npy=False, analyzor=sa)
         #print r, act
         if timestep % 50 == 0:
             print timestep
         if isOver:
             return
 
-def show_large(s, saliency, act, timestep, output, save=False, save_npy=False):
+def show_large(s, saliency, act, timestep, output, save=False, save_npy=False, analyzor=None):
     # Show the pictures of original resolution of the game play
-    # Convert the 84*84 saliency maps to 160 * 210 resolution
+    # Convert the 84*84 saliency maps to 210 * 160 resolution
     import matplotlib.pyplot as plt
     # Get the saliency map for the last frame in the history (The current frame)
     saliency = saliency[:,:,3]
@@ -138,9 +140,11 @@ def show_large(s, saliency, act, timestep, output, save=False, save_npy=False):
     if save_npy:
         np.save(output+"/state%d"%timestep, s)
         np.save(output+"/saliency%d"%timestep, saliency)
-    #print saliency.shape
-    #print s.shape
-    #exit()
+    # object saliency maps
+    if analyzor:
+        obj_sals = analyzor.object_saliencies(s, saliency)
+        obj_sals = analyzor.object_saliencies_filter(obj_sals)
+        s = analyzor.saliency_image(s, obj_sals)
     plt.subplot(211)
     plt.axis('off')
     fig = plt.imshow(s, aspect='equal')
