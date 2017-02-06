@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Author: Music
-
+from __future__ import division
 from tensorpack.tfutils import symbolic_functions as symbf
 
 import argparse
@@ -46,7 +46,7 @@ ENV_NAME = None
 DOUBLE = None
 DUELING = None
 
-Action_Dict = {0:'nowhere', 1:'up', 2:'right', 3:'left', 4:'down', 5:'upright', 6:'leftup', 7:'rightdown', 8:'leftdown'}
+Action_Dict = {0:'nowhere', 1:'up', 2:'right', 3:'left', 4:'down', 5:'upright', 6:'upleft', 7:'downright', 8:'downleft'}
 
 from common import play_one_episode, get_predict_func
 
@@ -138,7 +138,21 @@ def run(cfg, s_cfg, output):
 def generate_description(Qvalues, act):
     action_string = Action_Dict[act]
     description = "Pacman choose to go " + action_string
-    print description
+    return description
+
+def generate_explanation(pos_obj_sals, neg_obj_sals):
+    s = 'Because the system is aware of: \n'
+    for pos_obj in pos_obj_sals:
+        saliency, obj, position = pos_obj
+        x = (position.left + position.right) / 2
+        y = (position.up + position.down) / 2
+        s += '%s in (%.1f, %.1f) with saliency value %.1f \n'%(obj, x, y, saliency)
+    for neg_obj in neg_obj_sals:
+        saliency, obj, position = neg_obj
+        x = (position.left + position.right) / 2
+        y = (position.up + position.down) / 2
+        s += '%s in (%.1f, %.1f) with saliency value %.1f \n' % (obj, x, y, saliency)
+    return s
 
 def show_large(s, saliency, act, timestep, output, save=False, save_npy=False, analyzor=None, description=None, explanation=False):
     # Show the pictures of original resolution of the game play
@@ -153,16 +167,23 @@ def show_large(s, saliency, act, timestep, output, save=False, save_npy=False, a
     # object saliency maps
     if analyzor:
         obj_sals = analyzor.object_saliencies(s, saliency)
-        obj_sals = analyzor.object_saliencies_filter(obj_sals)
-        s = analyzor.saliency_image(s, obj_sals)
+        pos_obj_sals, neg_obj_sals = analyzor.object_saliencies_filter(obj_sals)
+        s = analyzor.saliency_image(s, pos_obj_sals, neg_obj_sals)
+        if explanation:
+            explanation = generate_explanation(pos_obj_sals, neg_obj_sals)
+    title = ''
+    if description:
+        title += str(description) + '\n'
+    if explanation:
+        title += explanation
     plt.subplot(211)
+    if description or explanation:
+        plt.title(title, fontsize=10)
     plt.axis('off')
     fig = plt.imshow(s, aspect='equal')
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
     plt.subplot(212)
-    if description:
-        plt.title(description)
     plt.axis('off')
     fig = plt.imshow(saliency, cmap='gray', aspect='equal')
     fig.axes.get_xaxis().set_visible(False)
