@@ -46,6 +46,8 @@ ENV_NAME = None
 DOUBLE = None
 DUELING = None
 
+Action_Dict = {0:'nowhere', 1:'up', 2:'right', 3:'left', 4:'down', 5:'upright', 6:'leftup', 7:'rightdown', 8:'leftdown'}
+
 from common import play_one_episode, get_predict_func
 
 def get_player(dumpdir=None):
@@ -119,18 +121,26 @@ def run(cfg, s_cfg, output):
         timestep += 1
         s = player.current_state()
         s0 = player.original_current_state()
-        act = predfunc([[s]])[0][0].argmax()
+        # Actions: 0-none; 1-Up; 2-right; 3-left; 4-down; 5-upright,6-leftup, 7-rightdown, 8-leftdown
+        Qvalues = predfunc([[s]])[0][0]
+        act = Qvalues.argmax()
         saliency = s_func([[s]])[0][0]
+        description = generate_description(Qvalues, act)
         r, isOver = player.action(act)
         #show(s, saliency, act, timestep, output, last=True, save=True)
-        show_large(s0, saliency, act, timestep, output, save=True, save_npy=False, analyzor=sa)
+        show_large(s0, saliency, act, timestep, output, save=True, save_npy=False, analyzor=sa, description=description, explanation=True)
         #print r, act
         if timestep % 50 == 0:
             print timestep
         if isOver:
             return
 
-def show_large(s, saliency, act, timestep, output, save=False, save_npy=False, analyzor=None):
+def generate_description(Qvalues, act):
+    action_string = Action_Dict[act]
+    description = "Pacman choose to go " + action_string
+    print description
+
+def show_large(s, saliency, act, timestep, output, save=False, save_npy=False, analyzor=None, description=None, explanation=False):
     # Show the pictures of original resolution of the game play
     # Convert the 84*84 saliency maps to 210 * 160 resolution
     import matplotlib.pyplot as plt
@@ -151,9 +161,10 @@ def show_large(s, saliency, act, timestep, output, save=False, save_npy=False, a
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
     plt.subplot(212)
-    plt.title('action:' + str(act))
+    if description:
+        plt.title(description)
     plt.axis('off')
-    fig = plt.imshow(saliency, aspect='equal')
+    fig = plt.imshow(saliency, cmap='gray', aspect='equal')
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
     if save:
