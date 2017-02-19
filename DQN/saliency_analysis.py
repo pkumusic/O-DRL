@@ -4,11 +4,15 @@
 
 # Analyze the produced saliency maps
 # Read states and saliency maps from dir and process with object recognize
-
+from __future__ import division
 from obj_recognizor import TemplateMatcher
 import numpy as np
 import os
 import cv2
+
+def mean(l):
+    return sum(l) / len(l)
+
 
 class Saliency_Analyzor():
     def __init__(self, template_dir):
@@ -31,31 +35,40 @@ class Saliency_Analyzor():
                 obj_sals.append((sal, obj, loc))
         return obj_sals
 
-    def object_saliencies_filter(self, obj_sals, topk=5):
-        obj_sals = sorted(obj_sals, key=lambda x:x[0], reverse=True)
-        if len(obj_sals) < 2 * topk:
-            return obj_sals
-        else:
-            obj_sals = obj_sals[:topk] + obj_sals[-topk:]
-        return obj_sals
+    def object_saliencies_filter(self, obj_sals, topk=3):
+        pos_obj_sals = sorted([sal for sal in obj_sals if sal[0] > 0], reverse=True)
+        neg_obj_sals = sorted([sal for sal in obj_sals if sal[0] < 0])
+        return pos_obj_sals[:2], neg_obj_sals[:2]
 
-    def calc_obj_sal(self, saliency, loc):
+    def calc_obj_sal(self, saliency, loc, gamma=0.1):
         """
         :param saliency: The saliency matrix
         :param loc: The location of the object bounding box
         :return: The value of the object saliency
         """
         sals = saliency[loc.up:loc.down, loc.left:loc.right]
-        sal = np.mean(sals)
-        return sal
+        sals = list(sals.flatten())
+        pos_sals = sorted([sal for sal in sals if sal > 0], reverse=True)
+        neg_sals = sorted([sal for sal in sals if sal < 0])
+        if len(pos_sals) > len(neg_sals):
+            return mean(pos_sals[:1+int(gamma*len(pos_sals))])
+        else:
+            return mean(neg_sals[:1+int(gamma*len(pos_sals))])
 
-    def saliency_image(self, image, obj_sals, filePath=None):
+
+    def saliency_image(self, image, pos_obj_sals, neg_obj_sals, filePath=None):
         import matplotlib.pyplot as plt
         assert image.shape == (210, 160, 3)
-        for obj_sal in obj_sals:
+        for obj_sal in pos_obj_sals:
             (sal, obj, loc) = obj_sal
             image = image.copy() # A bug in opencv
             cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (0, 0, 255), 1)
+            cv2.putText(image, "%s:%.2f" %(obj,sal), (loc.left - 2, loc.up), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
+                        cv2.LINE_AA)
+        for obj_sal in neg_obj_sals:
+            (sal, obj, loc) = obj_sal
+            image = image.copy() # A bug in opencv
+            cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (255, 0, 0), 1)
             cv2.putText(image, "%s:%.2f" %(obj,sal), (loc.left - 2, loc.up), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
                         cv2.LINE_AA)
         #show_image(image)
