@@ -68,7 +68,7 @@ def get_player(viz=False, train=False, dumpdir=None):
     def grey(img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = resize(img)
-        img = img[:, :, np.newaxis] / 255.0
+        img = img[:, :, np.newaxis]
         return img
     pl = MapPlayerState(pl, grey)
     #show_images(pl.current_state())
@@ -95,7 +95,7 @@ class Model(ModelDesc):
 
     def _get_DQN_prediction(self, image):
         """ image: [0,255]"""
-        #image = image / 255.0
+        image = image / 255.0
         with argscope(Conv2D, nl=PReLU.f, use_bias=True):
             l = Conv2D('conv0', image, out_channel=32, kernel_shape=5)
             l = MaxPooling('pool0', l, 2)

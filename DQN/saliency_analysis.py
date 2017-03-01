@@ -40,6 +40,10 @@ class Saliency_Analyzor():
         neg_obj_sals = sorted([sal for sal in obj_sals if sal[0] < 0])
         return pos_obj_sals[:2], neg_obj_sals[:2]
 
+    def top_saliency_filter(self, obj_sals, topk=1):
+        sals = sorted([sal for sal in obj_sals if sal[1] != 'pacman'], key=lambda x:abs(x[0]), reverse=True)
+        return sals[:topk]
+
     def calc_obj_sal(self, saliency, loc, gamma=0.1):
         """
         :param saliency: The saliency matrix
@@ -62,14 +66,26 @@ class Saliency_Analyzor():
         for obj_sal in pos_obj_sals:
             (sal, obj, loc) = obj_sal
             image = image.copy() # A bug in opencv
-            cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (0, 0, 255), 1)
-            cv2.putText(image, "%s:%.2f" %(obj,sal), (loc.left - 2, loc.up), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
+            cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (255, 0, 0), 2)
+            cv2.putText(image, "%s" %(obj), (loc.left - 4, loc.up - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
                         cv2.LINE_AA)
         for obj_sal in neg_obj_sals:
             (sal, obj, loc) = obj_sal
             image = image.copy() # A bug in opencv
-            cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (255, 0, 0), 1)
-            cv2.putText(image, "%s:%.2f" %(obj,sal), (loc.left - 2, loc.up), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
+            cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (255, 0, 0), 2)
+            cv2.putText(image, "%s" %(obj), (loc.left - 4, loc.up - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
+                        cv2.LINE_AA)
+        #show_image(image)
+        return image
+
+    def saliency_analysis_image(self, image, obj_sals, filePath=None):
+        import matplotlib.pyplot as plt
+        assert image.shape == (210, 160)
+        for obj_sal in obj_sals:
+            (sal, obj, loc) = obj_sal
+            image = image.copy() # A bug in opencv
+            cv2.rectangle(image, (loc.left, loc.up), (loc.right, loc.down), (255, 0, 0), 2)
+            cv2.putText(image, "%s" %(obj), (loc.left - 4, loc.up - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1,
                         cv2.LINE_AA)
         #show_image(image)
         return image
