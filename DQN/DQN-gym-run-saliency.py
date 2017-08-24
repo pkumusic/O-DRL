@@ -2,42 +2,29 @@
 # -*- coding: utf-8 -*-
 # Author: Music
 from __future__ import division
-from tensorpack.tfutils import symbolic_functions as symbf
-
 import argparse
 from tensorpack.predict.common import PredictConfig
 from tensorpack import *
 from tensorpack.models.model_desc import ModelDesc, InputVar
-from tensorpack.train.config import TrainConfig
-from tensorpack.tfutils.common import *
-from tensorpack.callbacks.group import Callbacks
-from tensorpack.callbacks.stat import StatPrinter
-from tensorpack.callbacks.common import ModelSaver
-from tensorpack.callbacks.param import ScheduledHyperParamSetter, HumanHyperParamSetter
-from tensorpack.tfutils.summary import add_moving_summary, add_param_summary
-from tensorpack.RL.expreplay import ExpReplay
 from tensorpack.tfutils.sessinit import SaverRestore
-from tensorpack.train.queue import QueueInputTrainer
 from tensorpack.RL.common import MapPlayerState
 from tensorpack.RL.gymenv import GymEnv
-from tensorpack.RL.common import LimitLengthPlayer, PreventStuckPlayer
 from tensorpack.RL.history import HistoryFramePlayer
 from tensorpack.tfutils.argscope import argscope
 from tensorpack.models.conv2d import Conv2D
 from tensorpack.models.pool import MaxPooling
 from tensorpack.models.nonlin import LeakyReLU, PReLU
 from tensorpack.models.fc import FullyConnected
-import tensorpack.tfutils.summary as summary
-from tensorpack.tfutils.gradproc import MapGradient, SummaryGradient
-from tensorpack.callbacks.graph import RunOp
-from tensorpack.callbacks.base import PeriodicCallback
 from tensorpack.predict.base import OfflinePredictor
 from saliency_analysis import Saliency_Analyzor
-from obj_recognizor import Position, TemplateMatcher
+from obj_recognizor import TemplateMatcher
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import deque
+import pickle
+from matplotlib_colorbar.colorbar import Colorbar
 
 IMAGE_SIZE = (84, 84)
 FRAME_HISTORY = 4
@@ -194,7 +181,100 @@ def save_arrays(s0, us, s, saliency, act, r, timestep, output):
     np.savez(output + "/arrays%d" % timestep, s0=s0, us=us, s=s, saliency=saliency, act=act, r=r)
     return
 
-def object_saliencies(index):
+def change_points(tm, predfunc):
+    Q_values = []
+    variances = []
+    for i in xrange(1,1291):
+        arrays = np.load('arrays2/arrays%d.npz' % i)
+        s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(
+            arrays['act']), float(arrays['r'])
+        Qvalues = predfunc([[s]])[0][0]
+        Qvalue = Qvalues[act]
+        variance = np.ptp(Qvalues)
+        variances.append(variance)
+        #Q_values.append(Qvalue)
+    highlight(variances)
+    #pickle.dump(Q_values, open('seq2/Q_values', 'w'))
+
+def change_points_saliency(tm, predfunc):
+    diff = []
+    for i in xrange(1, 1291):
+        arrays1 = np.load('arrays2/arrays%d.npz' % i)
+        saliency1 = np.array(arrays1['saliency'])
+        arrays2 = np.load('arrays2/arrays%d.npz' % (i+1))
+        saliency2 = np.array(arrays2['saliency'])
+        dist = np.linalg.norm(saliency1 - saliency2)
+        diff.append(dist)
+    highlight(diff)
+
+
+
+
+def highlight(values):
+    #diff = [abs(values[i] - values[i-1]) for i in xrange(1, len(values))]
+    #change_points = [i+2 for i in xrange(len(diff)) if diff[i] > 15]
+    change_points = [i for i in xrange(len(values)) if values[i] > 15]
+    print change_points
+    plt.plot(values)
+    plt.plot()
+    plt.show()
+    print values
+
+
+
+
+def real_act(tm):
+    start = 1
+    arrays = np.load('arrays2/arrays%d.npz' % start)
+    s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(
+        arrays['act']), float(arrays['r'])
+    extracted_objects = tm.match_all_objects(s0)
+    positions = [p for p in extracted_objects['pacman'] if not (
+    (p.left == 27 and p.right == 37 and p.up == 172 and p.down == 184) or (
+    p.left == 11 and p.right == 21 and p.up == 172 and p.down == 184))]
+    if positions:
+        last_position = positions[0]
+    else:
+        last_position = None
+    last_act = 'none'
+    real_acts = {}
+    change_points=[]
+    for index in xrange(2, 1291):
+        arrays = np.load('arrays2/arrays%d.npz' % index)
+        s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(arrays['act']), float(arrays['r'])
+        extracted_objects = tm.match_all_objects(s0)
+        positions = [p for p in extracted_objects['pacman'] if not ((p.left==27 and p.right==37 and p.up==172 and p.down==184) or (p.left==11 and p.right==21 and p.up==172 and p.down==184))]
+        if positions:
+            cur_position = positions[0]
+        else:
+            cur_position = None
+        if index <= 86:
+            real_act = 'none'
+        elif cur_position is None or last_position is None:
+            real_act = last_act
+        elif cur_position.up < last_position.up and cur_position.down < last_position.down:
+            real_act = 'up'
+        elif cur_position.up > last_position.up and cur_position.down > last_position.down:
+            real_act = 'down'
+        elif cur_position.left > last_position.left and cur_position.right > last_position.right:
+            real_act = 'right'
+        elif cur_position.left < last_position.left and cur_position.right < last_position.right:
+            real_act = 'left'
+        elif cur_position.left == last_position.left and cur_position.right == last_position.right and cur_position.up == last_position.up and cur_position.down == last_position.down:
+            real_act = 'none'
+        else:
+            real_act = last_act
+        real_acts[index] = real_act
+        if real_act != last_act:
+            change_points.append(index)
+        last_act = real_act
+        last_position = cur_position
+    print change_points
+    pickle.dump(real_acts, open('seq2/real_acts', 'w'))
+    pickle.dump(change_points, open('seq2/real_acts_change_points', 'w'))
+
+
+def object_saliencies(index, predfunc, s_func, tm, draw=False, save=False):
     """
     Produce object saliencies for each object.
     :return: [(saliency, obj, Position),...,]. obj can be used to find x_len and y_len
@@ -202,12 +282,84 @@ def object_saliencies(index):
     # for a given array, iterate through its all objects,
     # and calculate obj saliency for each by masking out the object to
     # see how much it changed for the Q-value of the given action.
-    arrays = np.load('arrays2/arrays%d.npz' % index)
-    s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(arrays['act']), float(arrays['r'])
+    arrays = np.load('array-O-DDQN/arrays%d.npz' % index)
+    #s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(arrays['act']), float(arrays['r'])
+    s0, us, s = arrays['s0'], arrays['us'], arrays['s']
+    pixel_saliency = s_func([[s]])[0][0]
+    pixel_saliency = pixel_saliency[:,:,0]
+    pixel_saliency = cv2.resize(pixel_saliency, (160, 210), interpolation=cv2.INTER_NEAREST)
+    #print pixel_saliency.shape
+    #plt.imshow(pixel_saliency, cmap='gray')
+    #plt.show()
     # detect objects in s0
-    sa = Saliency_Analyzor('../obj/MsPacman-v0')
+    #mask_wall(us)
+    extracted_objects = tm.match_all_objects(s0)
+    Qvalues = predfunc([[s]])[0][0]
+    act = Qvalues.argmax()
+    Qvalue = Qvalues[act]
+    # tm.draw_extracted_image(state, extracted_objects)
+    obj_sals = []
+    for obj, locs in extracted_objects.iteritems():
+        for loc in locs:
+            masked_s = mask_with_blank(us, loc, tm)
+            masked_Qvalue = predfunc([[masked_s]])[0][0][act]
+            diff = masked_Qvalue - Qvalue
+            obj_sals.append((diff, obj, loc))
+    if draw:
+        # Draw the object saliency image
+        canvas = np.zeros((210, 160))
+        for sal, _, loc in obj_sals:
+            canvas[loc.up: loc.down, loc.left: loc.right] = sal
+        #canvas = cv2.resize(canvas, (160,210), interpolation = cv2.INTER_NEAREST)
+        # Original Image
+        plt.subplot(131)
+        plt.axis('off')
+        fig = plt.imshow(s0, aspect='equal')
+        plt.title(Action_Dict[act] + ',' + str(Qvalue) )
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
+        # Object Saliency
+        plt.subplot(132)
+        plt.axis('off')
+        fig = plt.imshow(canvas, cmap='gray', aspect='equal')
+        plt.title('Object Saliency Map')
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
+        #colorbar = Colorbar(fig, location='upper left')
+        #colorbar.set_ticks([-100,-50,0,50,100])
+        #plt.gca().add_artist(colorbar)
+        # Pixel Saliency
+        plt.subplot(133)
+        plt.axis('off')
+        fig = plt.imshow(pixel_saliency, cmap='gray', aspect='equal')
+        plt.title('Pixel Saliency Map')
+        fig.axes.get_xaxis().set_visible(False)
+        fig.axes.get_yaxis().set_visible(False)
+        #colorbar = Colorbar(fig, location='upper left')
+        #colorbar.set_ticks([-0.03,0,0.03])
+        #plt.gca().add_artist(colorbar)
+        plt.savefig('models/O-DDQN/' + str(index), bbox_inches='tight', pad_inches=0)
+        plt.close()
+        #plt.show()
+        #plt.close()
+    if save:
+        # Save obj_sals, act, real_act, Q-value
+        pass
 
 
+    return act
+
+def mask_with_blank(us, loc, tm, background=57):
+    #show_images(us)
+    masked_us = us.copy()
+    masked_us[loc.up: loc.down, loc.left: loc.right, :] = background
+    #show_images(masked_us)
+    masked_us = cv2.resize(masked_us, IMAGE_SIZE)
+    return masked_us
+
+def mask_wall(state, x=50, y=50, background_color=57, wall_color=0):
+    print state
+    exit()
 
 
 def generate_description(act):
@@ -385,6 +537,9 @@ def mask(state, x, y, object, sa):
 
 
 
+
+
+
 def run_submission(cfg, output, nr):
     player = get_player(dumpdir=output)
     predfunc = get_predict_func(cfg)
@@ -450,13 +605,28 @@ if __name__ == '__main__':
             output_var_names=['saliency'])
 
     #sample_epoch_for_analysis(cfg, s_cfg, args.output)
+    #exit()
     #analyze('arrays1', args.output)
     #sensitivity_analysis(667, s_cfg, cfg)
     #run_submission(cfg, args.output, args.episode)
     #do_submit(args.output, args.api)
-    object_saliencies(100)
+    #for i in xrange(100,300):
+    #    object_saliencies(i, cfg, draw=True)
+    #object_saliencies(120, cfg, draw=True)
+    tm = TemplateMatcher('../obj/MsPacman-v0')
+    predfunc = OfflinePredictor(cfg)
+    s_func   = OfflinePredictor(s_cfg)
+    acts = [0]
+    #for i in xrange(1,1850):
+    #    act = object_saliencies(i, predfunc, s_func, tm, draw=True)
+    #    acts.append(act)
+    #pickle.dump(acts, open('models/DDQN/acts-O-DDQN', 'w'))
+    #real_act(tm)
+    object_saliencies(641, predfunc, s_func, tm, draw=True)
+    #change_points(tm, predfunc)
 
-    
+
+
     #saliency = cv2.resize(saliency, (160, 210))
     #obj_sals = [(-17.05189323425293, 'ghost', Position(left=141, right=151, up=158, down=171))]
     #act = 3
