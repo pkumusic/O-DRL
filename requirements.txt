@@ -1,0 +1,16 @@
+numpy
+six
+termcolor
+tqdm>4.11.1
+msgpack-python
+msgpack-numpy
+pyzmq
+subprocess32; python_version < '3.0'
+functools32; python_version < '3.0'
+pillow
+scipy
+h5py
+tornado; python_version < '3.0'
+lmdb
+matplotlib
+scikit-learn
