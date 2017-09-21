@@ -629,7 +629,7 @@ if __name__ == '__main__':
     s_func   = OfflinePredictor(s_cfg)
     tm = TemplateMatcher('../obj/MsPacman-v0')
 
-    sample_epoch_for_analysis(predfunc, s_func, args.output)
+    sample_epoch_for_analysis(predfunc, s_func, args.output, tm)
     real_act(tm, args.output)
 
 
@@ -648,7 +648,7 @@ if __name__ == '__main__':
     #    acts.append(act)
     #pickle.dump(acts, open('models/DDQN/acts-O-DDQN', 'w'))
     #real_act(tm)
-    object_saliencies(641, predfunc, s_func, tm, draw=True)
+    #object_saliencies(641, predfunc, s_func, tm, draw=True)
     #change_points(tm, predfunc)
 
 
