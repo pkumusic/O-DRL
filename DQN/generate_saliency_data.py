@@ -238,7 +238,7 @@ def real_act(tm, output):
     real_acts = {}
     change_points=[]
     for index in xrange(2, 1291):
-        arrays = np.load('arrays2/arrays%d.npz' % index)
+        arrays = np.load(output+'/arrays%d.npz' % index)
         s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(arrays['act']), float(arrays['r'])
         extracted_objects = tm.match_all_objects(s0)
         positions = [p for p in extracted_objects['pacman'] if not ((p.left==27 and p.right==37 and p.up==172 and p.down==184) or (p.left==11 and p.right==21 and p.up==172 and p.down==184))]
