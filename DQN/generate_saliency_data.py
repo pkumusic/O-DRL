@@ -134,7 +134,7 @@ def get_history_state(history):
     assert len(zeros) == history.maxlen
     return np.concatenate(zeros, axis=2)
 
-def sample_epoch_for_analysis(cfg, s_cfg, output):
+def sample_epoch_for_analysis(predfunc, s_func, output):
     """
     :param cfg: cfg to predict Q values
     :param s_cfg: cfg to predict pixel saliency maps in 84 * 84 * 4
@@ -143,8 +143,6 @@ def sample_epoch_for_analysis(cfg, s_cfg, output):
     Arrays including (original_state(210*160*3), unresized_states(210*160*4), states(84*84*4), saliency(84*84*4), act, r, timestep)
     """
     player = get_player(dumpdir=output)
-    predfunc = OfflinePredictor(cfg)
-    s_func   = OfflinePredictor(s_cfg)
     timestep = 0
     sa = Saliency_Analyzor('../obj/MsPacman-v0')
     R = 0
@@ -223,9 +221,9 @@ def highlight(values):
 
 
 
-def real_act(tm):
+def real_act(tm, output):
     start = 1
-    arrays = np.load('arrays2/arrays%d.npz' % start)
+    arrays = np.load(output+'/arrays%d.npz' % start)
     s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(
         arrays['act']), float(arrays['r'])
     extracted_objects = tm.match_all_objects(s0)
@@ -264,14 +262,14 @@ def real_act(tm):
             real_act = 'none'
         else:
             real_act = last_act
-        real_acts[index] = real_act
+        real_acts[index-1] = real_act
         if real_act != last_act:
             change_points.append(index)
         last_act = real_act
         last_position = cur_position
-    print change_points
-    pickle.dump(real_acts, open('seq2/real_acts', 'w'))
-    pickle.dump(change_points, open('seq2/real_acts_change_points', 'w'))
+    #print change_points
+    pickle.dump(real_acts, open(output+'/real_acts', 'w'))
+    #pickle.dump(change_points, open('seq2/real_acts_change_points', 'w'))
 
 
 def object_saliencies(index, predfunc, s_func, tm, draw=False, save=False):
@@ -604,8 +602,15 @@ if __name__ == '__main__':
             input_var_names=['state'],
             output_var_names=['saliency'])
 
-    #sample_epoch_for_analysis(cfg, s_cfg, args.output)
-    #exit()
+    predfunc = OfflinePredictor(cfg)
+    s_func   = OfflinePredictor(s_cfg)
+    tm = TemplateMatcher('../obj/MsPacman-v0')
+
+    sample_epoch_for_analysis(predfunc, s_func, args.output)
+    real_act(tm, args.output)
+
+
+    exit()
     #analyze('arrays1', args.output)
     #sensitivity_analysis(667, s_cfg, cfg)
     #run_submission(cfg, args.output, args.episode)
@@ -613,10 +618,8 @@ if __name__ == '__main__':
     #for i in xrange(100,300):
     #    object_saliencies(i, cfg, draw=True)
     #object_saliencies(120, cfg, draw=True)
-    tm = TemplateMatcher('../obj/MsPacman-v0')
-    predfunc = OfflinePredictor(cfg)
-    s_func   = OfflinePredictor(s_cfg)
-    acts = [0]
+
+    #acts = [0]
     #for i in xrange(1,1850):
     #    act = object_saliencies(i, predfunc, s_func, tm, draw=True)
     #    acts.append(act)
