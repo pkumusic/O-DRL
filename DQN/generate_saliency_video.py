@@ -10,7 +10,7 @@ import pickle
 def sample_data(index, input, draw=False):
     arrays = np.load(input + '/arrays%d.npz' % index)
     state, pixel, object = arrays['s0'], arrays['pixel_saliency'], arrays['object_saliency']
-    real_acts = pickle.load(input + '/real_acts')
+    real_acts = pickle.load(open(input + '/real_acts', 'r'))
     real_act = real_acts[index]
     print "real_action", real_act
     print state
