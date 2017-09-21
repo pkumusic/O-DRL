@@ -244,11 +244,10 @@ def highlight(values):
 def real_act(tm, output):
     start = 1
     arrays = np.load(output+'/arrays%d.npz' % start)
-    info = np.load(output+'/info')
+    info = np.load(output+'/info.npz')
     total_step = info['total_step']
     print "Total step: ", total_step
-    s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(
-        arrays['act']), float(arrays['r'])
+    s0 = arrays['s0']
     extracted_objects = tm.match_all_objects(s0)
     positions = [p for p in extracted_objects['pacman'] if not (
     (p.left == 27 and p.right == 37 and p.up == 172 and p.down == 184) or (
@@ -262,7 +261,7 @@ def real_act(tm, output):
     change_points=[]
     for index in xrange(2, total_step):
         arrays = np.load(output+'/arrays%d.npz' % index)
-        s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(arrays['act']), float(arrays['r'])
+        s0 = arrays['s0']
         extracted_objects = tm.match_all_objects(s0)
         positions = [p for p in extracted_objects['pacman'] if not ((p.left==27 and p.right==37 and p.up==172 and p.down==184) or (p.left==11 and p.right==21 and p.up==172 and p.down==184))]
         if positions:
