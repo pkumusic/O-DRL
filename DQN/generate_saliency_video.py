@@ -17,4 +17,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', help='input directory', required=True)
     args = parser.parse_args()
-    sample_data(1, args.output)
+    sample_data(1, args.input)
