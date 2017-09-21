@@ -134,7 +134,7 @@ def get_history_state(history):
     assert len(zeros) == history.maxlen
     return np.concatenate(zeros, axis=2)
 
-def sample_epoch_for_analysis(predfunc, s_func, output):
+def sample_epoch_for_analysis(predfunc, s_func, output, tm):
     """
     :param cfg: cfg to predict Q values
     :param s_cfg: cfg to predict pixel saliency maps in 84 * 84 * 4
@@ -164,15 +164,35 @@ def sample_epoch_for_analysis(predfunc, s_func, output):
         r, isOver = player.action(act)
         if isOver:
             history.clear()
-        save_arrays(s0, us, s, saliency, act, r, timestep, output)
-        #show(s, saliency, act, timestep, output, last=True, save=True)
-        #show_large(s0, saliency, act, timestep, output, save=True, save_npy=False, analyzor=sa, description=description, explanation=True)
-        #print r, act
+        # Generate pixel saliency
+        pixel_saliency = saliency[:, :, 0]
+        pixel_saliency = cv2.resize(pixel_saliency, (160, 210), interpolation=cv2.INTER_NEAREST)
+        # Generate object saliency
+        extracted_objects = tm.match_all_objects(s0)
+        Qvalues = predfunc([[s]])[0][0]
+        act = Qvalues.argmax()
+        Qvalue = Qvalues[act]
+        # tm.draw_extracted_image(state, extracted_objects)
+        obj_sals = []
+        for obj, locs in extracted_objects.iteritems():
+            for loc in locs:
+                masked_s = mask_with_blank(us, loc, tm)
+                masked_Qvalue = predfunc([[masked_s]])[0][0][act]
+                diff = masked_Qvalue - Qvalue
+                obj_sals.append((diff, obj, loc))
+        object_saliency = np.zeros((210, 160))
+        for sal, _, loc in obj_sals:
+                object_saliency[loc.up: loc.down, loc.left: loc.right] = sal
+
+        np.savez(output + "/arrays%d" % timestep, s0=s0, pixel_saliency=pixel_saliency, object_saliency=object_saliency, act=act)
+
         R += r
         if timestep % 50 == 0:
             print timestep
             print 'Total Reward:', R
         if isOver:
+            total_step = timestep
+            np.savez(output+"/info", total_step=total_step)
             return
 
 def save_arrays(s0, us, s, saliency, act, r, timestep, output):
@@ -224,6 +244,9 @@ def highlight(values):
 def real_act(tm, output):
     start = 1
     arrays = np.load(output+'/arrays%d.npz' % start)
+    info = np.load(output+'/info')
+    total_step = info['total_step']
+    print "Total step: ", total_step
     s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(
         arrays['act']), float(arrays['r'])
     extracted_objects = tm.match_all_objects(s0)
@@ -237,7 +260,7 @@ def real_act(tm, output):
     last_act = 'none'
     real_acts = {}
     change_points=[]
-    for index in xrange(2, 1291):
+    for index in xrange(2, total_step):
         arrays = np.load(output+'/arrays%d.npz' % index)
         s0, us, s, saliency, act, r = arrays['s0'], arrays['us'], arrays['s'], arrays['saliency'], int(arrays['act']), float(arrays['r'])
         extracted_objects = tm.match_all_objects(s0)
